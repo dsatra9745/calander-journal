@@ -1,0 +1,2415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Productivity Calendar</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f0efeb;
+    }
+    
+    .container {
+      min-height: 100vh;
+      padding: 24px;
+      position: relative;
+    }
+    
+    .background-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.2);
+      pointer-events: none;
+    }
+    
+    .calendar-wrapper {
+      max-width: 1100px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 10;
+    }
+    
+    .calendar-card {
+      background: #fafaf8;
+      border-radius: 20px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+    }
+    
+    .calendar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 28px 32px;
+      border-bottom: 1px solid #e8e6e1;
+    }
+    
+    .calendar-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 28px;
+      font-weight: 400;
+      color: #1a1a2e;
+      letter-spacing: -0.3px;
+    }
+    
+    .header-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    
+    .btn {
+      padding: 8px 14px;
+      border: none;
+      background: transparent;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 14px;
+      font-family: 'DM Sans', sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #4a4840;
+    }
+    
+    .btn:hover {
+      background-color: #f0eeea;
+    }
+    
+    .btn-primary {
+      background-color: #6366f1;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background-color: #4f46e5;
+    }
+    
+    .btn-remove {
+      color: #dc2626;
+    }
+    
+    .btn-remove:hover {
+      background-color: #fee2e2;
+    }
+    
+    .divider {
+      width: 1px;
+      height: 24px;
+      background-color: #e0ded8;
+      margin: 0 8px;
+    }
+    
+    .calendar-body {
+      padding: 24px 28px 28px;
+    }
+    
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 1px;
+      background-color: #e8e6e1;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    
+    .day-header {
+      background-color: #f5f4f0;
+      padding: 12px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 12px;
+      color: #8a8780;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    
+    .day-cell {
+      background-color: #fafaf8;
+      padding: 10px;
+      min-height: 88px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .day-cell:hover {
+      background-color: #f5f4f0;
+    }
+    
+    .day-number {
+      position: relative;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 4px;
+      color: #4a4840;
+    }
+    
+    .day-number.today {
+      color: #6366f1;
+      font-weight: 700;
+    }
+    
+    .day-image {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.4;
+    }
+    
+    .day-indicators {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      display: flex;
+      gap: 4px;
+      z-index: 10;
+    }
+    
+    .day-tick {
+      width: 16px;
+      height: 16px;
+      color: #22c55e;
+      font-weight: bold;
+      font-size: 16px;
+      line-height: 16px;
+    }
+    
+    .context-menu {
+      position: fixed;
+      background: #fafaf8;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      border: 1px solid #e8e6e1;
+      padding: 4px 0;
+      z-index: 100;
+    }
+    
+    .context-menu-item {
+      width: 100%;
+      padding: 10px 18px;
+      text-align: left;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 14px;
+      font-family: 'DM Sans', sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #4a4840;
+    }
+    
+    .context-menu-item:hover {
+      background-color: #f0eeea;
+    }
+    
+    .context-menu-item.danger {
+      color: #dc2626;
+    }
+    
+    /* ============ FULL-SCREEN JOURNAL ============ */
+    .journal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      transition: background-color 0.3s;
+    }
+
+    .journal-overlay.cat-past { background: #fffbfb; }
+    .journal-overlay.cat-present { background: #f9fbfe; }
+    .journal-overlay.cat-future { background: #f8fdfb; }
+
+    .journal-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 36px;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      flex-shrink: 0;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .topbar-date {
+      font-family: 'DM Serif Display', serif;
+      font-size: 18px;
+      color: #1a1a2e;
+    }
+
+    .topbar-day {
+      font-size: 13px;
+      color: #b0ada6;
+      font-weight: 500;
+    }
+
+    .close-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(0,0,0,0.04);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .close-btn:hover {
+      background: rgba(0,0,0,0.08);
+      transform: scale(1.05);
+    }
+
+    .journal-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 780px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 36px;
+    }
+
+    /* Question banner — category tinted */
+    .question-banner {
+      padding: 48px 0 36px;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      flex-shrink: 0;
+      margin: 0 -36px;
+      padding-left: 36px;
+      padding-right: 36px;
+      transition: background-color 0.3s;
+    }
+
+    .cat-past .question-banner { background: #fdf2f2; }
+    .cat-present .question-banner { background: #eef4fd; }
+    .cat-future .question-banner { background: #eef8f2; }
+
+    .question-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .category-pill {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      padding: 6px 14px;
+      border-radius: 20px;
+    }
+
+    .category-past { background: #f8d7d7; color: #7c2d2d; }
+    .category-present { background: #d4e4f7; color: #1e3a5f; }
+    .category-future { background: #d0f0de; color: #1a4731; }
+
+    .question-number {
+      font-size: 12px;
+      color: #b0ada6;
+      font-weight: 500;
+    }
+
+    .question-text {
+      font-family: 'DM Serif Display', serif;
+      font-size: 28px;
+      line-height: 1.4;
+      letter-spacing: -0.3px;
+      transition: color 0.3s;
+    }
+
+    .cat-past .question-text { color: #7c2d2d; }
+    .cat-present .question-text { color: #1e3a5f; }
+    .cat-future .question-text { color: #1a4731; }
+
+    /* Hints */
+    .hints-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      color: #8a8780;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      transition: color 0.2s;
+      align-self: flex-start;
+    }
+
+    .hints-toggle:hover {
+      color: #6366f1;
+    }
+
+    .hints-content {
+      margin-top: 12px;
+      padding: 18px 20px;
+      background: rgba(255,255,255,0.7);
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,0.06);
+    }
+
+    .hints-content ul {
+      margin: 8px 0 0 0;
+      padding: 0;
+      list-style: none;
+      color: #5a584f;
+      font-size: 13px;
+      line-height: 1.8;
+    }
+
+    .hints-content li {
+      margin-bottom: 6px;
+      padding-left: 18px;
+      position: relative;
+    }
+
+    .hints-content li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: #b0ada6;
+    }
+
+    /* Image preview in journal */
+    .journal-image-preview {
+      margin: 20px -36px 0;
+      max-height: 200px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .journal-image-preview img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .journal-image-remove {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.5);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .journal-image-remove svg {
+      stroke: white;
+    }
+
+    /* Writing area */
+    .writing-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 36px 0 20px;
+      min-height: 0;
+    }
+
+    textarea {
+      flex: 1;
+      width: 100%;
+      min-height: 320px;
+      padding: 0;
+      border: none;
+      resize: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 17px;
+      line-height: 2;
+      color: #2c2c3a;
+      background: transparent;
+      outline: none;
+    }
+
+    textarea::placeholder {
+      color: #d0cdc6;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: transparent;
+      box-shadow: none;
+    }
+
+    textarea.invalid {
+      /* no visible border change in full-screen mode */
+    }
+
+    .word-count {
+      font-size: 13px;
+      color: #c4c1bb;
+      font-weight: 500;
+    }
+
+    .word-count.warning {
+      color: #e67e22;
+    }
+
+    .word-count.error {
+      color: #ccc;
+    }
+
+    .word-count.good {
+      color: #27ae60;
+    }
+
+    .validation-warning {
+      margin-top: 8px;
+      padding: 10px 14px;
+      background-color: #fef8ee;
+      border-left: 3px solid #f59e0b;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #92400e;
+    }
+
+    .writing-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 0;
+      border-top: 1px solid rgba(0,0,0,0.06);
+      flex-shrink: 0;
+    }
+
+    .save-indicator {
+      font-size: 12px;
+      color: #c4c1bb;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .save-dot {
+      width: 6px;
+      height: 6px;
+      background: #27ae60;
+      border-radius: 50%;
+    }
+
+    /* Freeform section */
+    .freeform-section {
+      border-top: 1px solid rgba(0,0,0,0.06);
+      padding: 28px 0 40px;
+      flex-shrink: 0;
+    }
+
+    .freeform-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 17px;
+      font-weight: 500;
+      color: #8a8780;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      transition: color 0.2s;
+    }
+
+    .freeform-toggle:hover {
+      color: #6b6860;
+    }
+
+    .freeform-content {
+      margin-top: 16px;
+    }
+
+    .freeform-textarea {
+      width: 100%;
+      min-height: 200px;
+      padding: 18px 20px;
+      border: 1.5px dashed #dddbd5;
+      border-radius: 14px;
+      resize: vertical;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      line-height: 1.8;
+      color: #4a4840;
+      background: rgba(255,255,255,0.5);
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    .freeform-textarea::placeholder {
+      color: #cac7c0;
+    }
+
+    .freeform-textarea:focus {
+      border-color: #9a978f;
+      border-style: solid;
+      background: white;
+      box-shadow: none;
+    }
+    
+    .ai-insights-section {
+      margin-top: 24px;
+      padding: 18px;
+      background-color: #f0eeff;
+      border-left: none;
+      border: 1px solid #e0e7ff;
+      border-radius: 14px;
+    }
+    
+    .ai-insights-content {
+      margin-top: 12px;
+      padding: 16px;
+      background: white;
+      border-radius: 10px;
+      white-space: pre-wrap;
+      line-height: 1.7;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #8a8780;
+    }
+    
+    .api-key-section {
+      margin-top: 16px;
+      padding: 14px 16px;
+      background-color: #fef8ee;
+      border-radius: 12px;
+      border-left: none;
+      border: 1px solid #f5e6cc;
+    }
+
+    .api-key-input {
+      width: 100%;
+      padding: 10px 12px;
+      margin-top: 8px;
+      border: 1.5px solid #e8e6e1;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 12px;
+      background: white;
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    .insights-sidebar {
+      position: fixed;
+      right: 0;
+      top: 0;
+      width: 320px;
+      height: 100vh;
+      background: #fafaf8;
+      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.08);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .insights-sidebar.collapsed {
+      transform: translateX(320px);
+    }
+    
+    .sidebar-toggle {
+      position: fixed;
+      right: 320px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #fafaf8;
+      border: 1px solid #e8e6e1;
+      border-right: none;
+      border-radius: 10px 0 0 10px;
+      padding: 14px 8px;
+      cursor: pointer;
+      box-shadow: -4px 0 12px rgba(0, 0, 0, 0.06);
+      z-index: 1001;
+      transition: right 0.3s ease;
+      color: #8a8780;
+      font-size: 12px;
+    }
+    
+    .sidebar-toggle.collapsed {
+      right: 0;
+    }
+    
+    .sidebar-toggle:hover {
+      background: #f0eeea;
+    }
+    
+    .sidebar-header {
+      padding: 24px;
+      border-bottom: 1px solid #e8e6e1;
+      background: #fafaf8;
+    }
+    
+    .sidebar-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 18px;
+      font-weight: 400;
+      color: #1a1a2e;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+    
+    .insight-entry {
+      background: #f5f4f0;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    
+    .insight-entry:hover {
+      background: #eeedea;
+      border-color: #6366f1;
+    }
+    
+    .insight-entry.active {
+      border-color: #6366f1;
+      background: #f0eeff;
+    }
+    
+    .insight-date {
+      font-size: 13px;
+      color: #4a4840;
+      font-weight: 500;
+    }
+    
+    .day-cell.highlighted {
+      background-color: rgba(99, 102, 241, 0.12);
+      border: 2px solid #6366f1;
+    }
+    
+    .empty-insights {
+      text-align: center;
+      padding: 40px 20px;
+      color: #b0ada6;
+    }
+    
+    /* 4-Analysis Grid Modal */
+    .analysis-grid-modal {
+      max-width: 1100px;
+      width: 95%;
+      max-height: 92vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background: #fafaf8;
+      border-radius: 20px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+    }
+    
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: #e8e6e1;
+      overflow-y: auto;
+      flex: 1;
+    }
+    
+    .analysis-card {
+      background: #fafaf8;
+      padding: 28px 30px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      transition: background 0.2s;
+    }
+    
+    .analysis-card:hover {
+      background: #f5f4f0;
+    }
+
+    .analysis-card::before {
+      content: '';
+      display: block;
+      width: 32px;
+      height: 3px;
+      border-radius: 3px;
+    }
+
+    .analysis-card.evidence::before { background: #3498db; }
+    .analysis-card.blindspot::before { background: #e74c3c; }
+    .analysis-card.growth::before { background: #27ae60; }
+    .analysis-card.thematic::before { background: #f39c12; }
+    
+    .analysis-card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .analysis-card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .analysis-card.evidence .analysis-card-icon { background: #e8f4fd; }
+    .analysis-card.blindspot .analysis-card-icon { background: #fde8e8; }
+    .analysis-card.growth .analysis-card-icon { background: #e8f8ee; }
+    .analysis-card.thematic .analysis-card-icon { background: #fef4e6; }
+
+    .analysis-card-header-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .analysis-card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1a1a2e;
+      letter-spacing: -0.2px;
+      padding-bottom: 0;
+      margin-bottom: 0;
+      border-bottom: none;
+    }
+    
+    .analysis-card-description {
+      font-size: 12px;
+      color: #9a978f;
+      font-style: normal;
+      margin-bottom: 0;
+      font-weight: 400;
+    }
+    
+    .analysis-card-content {
+      font-size: 14px;
+      color: #4a4840;
+      line-height: 1.75;
+      white-space: pre-wrap;
+    }
+    
+    .analysis-card.evidence .analysis-card-title { border-color: transparent; }
+    .analysis-card.blindspot .analysis-card-title { border-color: transparent; }
+    .analysis-card.growth .analysis-card-title { border-color: transparent; }
+    .analysis-card.thematic .analysis-card-title { border-color: transparent; }
+    
+    .insight-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(10, 10, 20, 0.75);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 2000;
+    }
+    
+    .insight-modal {
+      background: #fafaf8;
+      border-radius: 20px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+      max-width: 800px;
+      width: 100%;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    
+    .insight-modal-header {
+      padding: 28px 32px 20px;
+      border-bottom: 1px solid #e8e6e1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      background: #fafaf8;
+      z-index: 10;
+    }
+    
+    .insight-modal-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 24px;
+      font-weight: 400;
+      color: #1a1a2e;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .insight-modal-meta {
+      font-size: 13px;
+      color: #8a8780;
+      margin-top: 6px;
+    }
+    
+    .insight-modal-body {
+      padding: 28px 32px;
+    }
+    
+    .insight-modal-text {
+      font-size: 15px;
+      line-height: 1.75;
+      color: #4a4840;
+      white-space: pre-wrap;
+    }
+  
+    .selection-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 3000;
+    }
+    
+    .selection-modal {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      max-width: 800px;
+      width: 100%;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .selection-modal-header {
+      padding: 24px;
+      border-bottom: 2px solid #e5e7eb;
+      background: #f9fafb;
+    }
+    
+    .selection-modal-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 8px;
+    }
+    
+    .selection-modal-subtitle {
+      font-size: 14px;
+      color: #6b7280;
+    }
+    
+    .selection-modal-body {
+      padding: 24px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    
+    .entry-checkbox {
+      display: flex;
+      align-items: start;
+      padding: 12px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      border: 2px solid #e5e7eb;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .entry-checkbox:hover {
+      border-color: #3b82f6;
+      background: #f0f9ff;
+    }
+    
+    .entry-checkbox.selected {
+      border-color: #3b82f6;
+      background: #eff6ff;
+    }
+    
+    .entry-checkbox input[type="checkbox"] {
+      margin-right: 12px;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+    
+    .entry-info {
+      flex: 1;
+    }
+    
+    .entry-date {
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 4px;
+    }
+    
+    .entry-question {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 6px;
+    }
+    
+    .entry-preview {
+      font-size: 12px;
+      color: #9ca3af;
+      font-style: italic;
+    }
+    
+    .selection-modal-footer {
+      padding: 20px 24px;
+      border-top: 2px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f9fafb;
+    }
+    
+    .selection-count {
+      font-size: 14px;
+      color: #6b7280;
+    }
+    
+    .selection-count.complete {
+      color: #10b981;
+      font-weight: 600;
+    }
+    
+    .selection-actions {
+      display: flex;
+      gap: 12px;
+    }
+    @media (max-width: 768px) {
+      .analysis-grid { grid-template-columns: 1fr; }
+      .analysis-card { padding: 22px 20px 26px; }
+      .journal-topbar { padding: 14px 20px; }
+      .journal-main { padding: 0 20px; }
+      .question-banner { padding: 32px 20px 24px; margin: 0 -20px; }
+      .question-text { font-size: 22px; }
+      .journal-image-preview { margin: 20px -20px 0; }
+      textarea { font-size: 16px; min-height: 250px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script>
+    // 60 Self-Authoring Questions
+    const QUESTIONS = {
+      PAST: [
+        "What's something you were once passionate about but gave up on? What made you stop, and do you miss it?",
+        "Describe a time when an adult (parent, teacher, coach) misunderstood you. How did that affect how you saw yourself?",
+        "What's a rule or expectation from your childhood that you've completely rejected as you've gotten older? Why did you reject it?",
+        "Think of a friendship that ended or faded away. What role did you play in that ending, even if it wasn't entirely your fault?",
+        "What's something you were afraid of as a kid that seems silly now? What's something you're afraid of now that might seem silly later?",
+        "Describe a moment when you felt betrayed or let down by someone you trusted. How did it change the way you trust people now?",
+        "What's a compliment or piece of praise you received years ago that you still remember? Why do you think it stuck with you?",
+        "When did you first realize your parents/guardians were flawed human beings and not all-knowing? How did that realization feel?",
+        "What's something embarrassing that happened to you that you can now see taught you something important?",
+        "Describe a version of yourself from 3-5 years ago. What would surprise them most about who you are now?",
+        "What hobby, interest, or activity did you hide from others because you worried they'd judge you for it?",
+        "Think of a time you were cruel or mean to someone. What was happening in your life that made you act that way?",
+        "What's a belief you held absolutely certain as true when you were younger, but now realize was wrong or incomplete?",
+        "Describe your relationship with a sibling or close family member when you were younger. What's one thing you wish you'd understood about them back then?",
+        "What's something difficult your family went through that people outside your family didn't know about? How did you cope with it?",
+        "When was a time you stood up for yourself or someone else? What gave you the courage, and how did it turn out?",
+        "What teacher, coach, or mentor had the biggest impact on you? What specifically did they do or say that mattered?",
+        "Describe a time when you worked really hard for something and failed anyway. What did you tell yourself about that failure?",
+        "What's a memory you keep returning to when you're feeling bad about yourself? Why do you think your brain goes there?",
+        "If you could go back and tell your younger self one thing they desperately needed to hear, what would it be and why?"
+      ],
+      PRESENT: [
+        "Describe a moment in the past month when you felt truly capable or proud of yourself. Why don't you feel that way more often?",
+        "What's something you do regularly that you know isn't good for you, but you keep doing it anyway? What need is it actually filling?",
+        "Think about how you spend your free time when no one's watching. What does that reveal about what you actually value?",
+        "What's a piece of advice you give to others that you completely fail to follow yourself?",
+        "Describe your living space right now. What would a stranger conclude about you just from looking at your room or home?",
+        "What's something you pretend not to care about, but actually care about deeply? Why the pretense?",
+        "When was the last time you felt jealous of someone? What specifically were you jealous of, and what does that tell you about what you want?",
+        "What's a conversation you've been avoiding? What would happen if you actually had it?",
+        "What's a small, everyday decision you make that you're slightly ashamed of? (How you eat when alone, what you watch, how you spend money, etc.) What would change if someone was watching?",
+        "What skill or ability do you have that you're not using right now? What's stopping you from using it?",
+        "Think about the last time you got genuinely angry. Was your anger really about the situation, or was it about something deeper?",
+        "Describe how you act when you're stressed versus how you wish you acted. What's the gap between those two versions of you?",
+        "What's your most common excuse for not doing things you say you want to do? Is that excuse actually true?",
+        "Describe a relationship in your life that takes more energy than it gives. Why are you still maintaining it?",
+        "What's something people compliment you on that you don't actually value about yourself? What would you rather be recognized for?",
+        "What's a question you hope people don't ask you because you don't like your honest answer?",
+        "Describe your relationship with your phone or social media. If you're being brutally honest, is it serving you or are you serving it?",
+        "What's something you judge other people for doing that you also do (or have done)? Why the double standard?",
+        "Think about your daily routine. What part of it is genuinely chosen by you versus inherited or defaulted into?",
+        "What's a strength you have that sometimes becomes a weakness? When does your superpower become your kryptonite?",
+        "Describe a time recently when you helped someone or made their day better, even in a small way. Do you do that kind of thing often, or was it unusual?",
+        "What's something you're secretly competitive about, even if you don't admit it out loud? Why does it matter to you?",
+        "Think about how you react when you make a mistake in front of others. Do you laugh it off, get defensive, apologize excessively, or something else? What does that reaction protect you from feeling?"
+      ],
+      FUTURE: [
+        "It's three years from now and you've exceeded your own expectations. Describe a single Tuesday in vivid detail—what you do, who you're with, how you feel.",
+        "What's something you want to accomplish but haven't told anyone about because you're afraid they'll think it's unrealistic?",
+        "Imagine you're 80 years old looking back on your life. What's the one thing you'd regret not doing or trying?",
+        "What does 'success' actually mean to you, not the definition you inherited from parents or society, but YOUR definition?",
+        "If money and other people's opinions weren't factors, what would you do with your time?",
+        "What's a fear you have about your future that you try not to think about? What's the worst that could happen if that fear came true?",
+        "Describe the person you want to become in five years. What's one small thing that person does daily that you don't do now?",
+        "What relationship (romantic, family, friendship) do you want to improve? What's one specific thing you could do differently starting tomorrow?",
+        "If you could master one skill or subject over the next two years, what would create the most positive change in your life?",
+        "Five years from now, what does your ideal daily environment look like—the physical spaces where you spend your time, the sounds and rhythms of your day, the people nearby? What's one element of that vision you could create now?",
+        "Think about your health in 10 years. What habits would Future You thank Present You for starting now?",
+        "What's something you say you'll do 'someday' that you know deep down you'll never do unless you commit to it now?",
+        "Imagine you're giving advice to someone just like you but five years younger. What would you tell them to prioritize?",
+        "What kind of person do you NOT want to become? What choices would lead you down that path?",
+        "If you could wake up tomorrow with one problem in your life completely solved, which problem would change everything else for the better?",
+        "What does 'meaningful work' look like to you? Are you moving toward it or away from it?",
+        "Describe your social life in an ideal future. Who's in it, who's not, and what do you actually do together?",
+        "What's something you're currently putting off until you're 'ready' or 'good enough'? What if you started before you felt ready—what's the smallest possible version you could try?",
+        "What legacy or impact do you want to leave behind, even if it's just on a few people? How are your current choices aligned with that?"
+      ]
+    };
+
+    // Question Hints - matched exactly to questions
+    const QUESTION_HINTS = [
+      // PAST 0-19
+      ["Sports, music, art, writing, a school subject, a video game, building things, a hobby you shared with someone", "Did you stop because you weren't \"good enough,\" lost interest, had no time, or someone discouraged you?"],
+      ["They assumed you didn't care when you were actually struggling, punished you for something that wasn't your fault, praised you for the wrong reasons", "Did you start believing their version of you, or did you rebel against it?"],
+      ["Rules about bedtime, food, religion, career paths, relationships, money, how to spend free time, expressing emotions", "What made you realize it didn't fit who you are?"],
+      ["Did you stop reaching out, pick a side in drama, get too busy, change in ways they didn't, say something hurtful?", "Looking back, could you have done anything differently?"],
+      ["Monsters, the dark, being alone, certain animals, getting in trouble, strangers, thunderstorms, needles", "Current fears: failure, rejection, being alone, not being good enough, what people think of you"],
+      ["A friend who shared a secret, a parent who broke a promise, a teacher who was unfair, someone online who wasn't who they seemed", "Did it make you more cautious with everyone or just certain types of people?"],
+      ["From a teacher, parent, friend, coach, stranger—about your abilities, character, appearance, effort, kindness", "Did it validate something you doubted about yourself, or show you a quality you didn't know you had?"],
+      ["Seeing them make a bad decision, realizing they didn't know something, watching them struggle, catching them in a lie, noticing their limitations", "Was it scary, liberating, disappointing, or something else?"],
+      ["Public mistakes, social failures, getting rejected, saying something awkward, failing at something in front of others", "What did it teach you about resilience, humility, taking risks, or not taking yourself too seriously?"],
+      ["What you care about, who you're friends with, what you're good at, what you do for fun, how you handle problems", "Would they be proud, confused, disappointed, or excited?"],
+      ["Certain music, shows, books, games, sports, creative pursuits, online communities, collections", "Do you still hide it, or have you stopped caring what people think?"],
+      ["Bullying, excluding someone, spreading rumors, saying something harsh, being cold to someone who cared about you", "Were you hurt, insecure, trying to fit in, or dealing with your own problems?"],
+      ["Beliefs about success, relationships, fairness, adults, how the world works, right and wrong, who you thought you'd become", "What changed your mind—experience, new information, getting older?"],
+      ["Did you fight constantly, compete, feel jealous, misunderstand their actions, take them for granted?", "If you're an only child, think about a cousin, close family friend, or parent"],
+      ["Financial stress, health issues, divorce, conflict, mental health struggles, loss, secrets kept from extended family or neighbors", "Did you distract yourself, talk to friends, withdraw, pretend everything was fine?"],
+      ["Confronting a bully, speaking up to an adult, defending a friend, saying no to peer pressure, reporting something wrong", "Did things improve, get worse, or stay complicated?"],
+      ["Did they believe in you when others didn't, push you harder than anyone else, teach you something beyond the subject, see something in you that you didn't see?", "Was it one big moment or many small ones?"],
+      ["Tryouts, auditions, tests, competitions, applications, projects, performances", "Did you blame yourself, make excuses, give up on similar things, or try again differently?"],
+      ["A public mistake, rejection, criticism, moment of failure, time someone hurt you, comparison to others", "Does replaying it serve a purpose, or does it just make you feel worse?"],
+      ["Reassurance about something you worried about, permission to be yourself, a warning about someone or something, encouragement to try something", "At what age did you need to hear this most?"],
+      
+      // PRESENT 20-42
+      ["Finishing something hard, helping someone, solving a problem, standing up for yourself, creating something, handling a difficult situation", "What gets in the way of feeling capable—self-doubt, comparing yourself to others, perfectionism?"],
+      ["Scrolling late at night, eating certain foods, avoiding things, staying up too late, procrastinating, staying in certain situations", "Does it numb something, distract you, give you control, provide comfort?"],
+      ["Learning things, consuming content, creating things, connecting with people, escaping, achieving, resting", "Is there a gap between what you say you value and how you actually spend time?"],
+      ["About work habits, relationships, self-care, taking risks, not worrying what people think, being patient, setting boundaries", "Why is it easier to see what others should do than to do it yourself?"],
+      ["Is it organized or chaotic, decorated or bare, functional or comfortable, clean or messy, personal or generic?", "What would they get right about you, and what would they miss?"],
+      ["Grades, popularity, what people think of you, being attractive, being successful, having your ideas validated, being liked", "Are you protecting yourself from disappointment or judgment?"],
+      ["Their skills, relationships, freedom, confidence, opportunities, lifestyle, belongings, weekend plans, how easy things seem for them", "Social media posts, people at school/work, siblings, friends, strangers, fictional characters"],
+      ["With a parent, friend, teacher, boss, roommate, partner—about boundaries, feelings, needs, problems, expectations", "What's the worst that could happen, and what's the best?"],
+      ["Shows you claim not to like, eating habits, time on apps, impulse purchases, procrastination, shortcuts you take", "Is the shame about the action or about being seen?"],
+      ["Musical, athletic, creative, technical, social, organizational, leadership skills—things you used to do or things people say you're good at", "Fear, lack of time, lost interest, no outlet, waiting to be \"good enough\" first?"],
+      ["Someone interrupting you, being dismissed, unfairness, feeling disrespected, losing control, being misunderstood", "Was it about this moment or accumulated frustration from other things?"],
+      ["Alone, with certain people, doing certain activities, online vs offline, at school/work vs home", "What changes—your voice, energy, opinions, humor, confidence?"],
+      ["\"I don't have time,\" \"I'm too tired,\" \"I'm not good enough yet,\" \"It's too late to start,\" \"I'll do it later\"", "If the excuse disappeared tomorrow, would you actually do the thing?"],
+      ["A friend, family member, coworker, online community, group chat—where you feel drained, fake, stressed, resentful, or exhausted", "Obligation, guilt, history, fear of conflict, hope it'll get better?"],
+      ["Comments from family, teachers, friends, coworkers, online—about being responsible, funny, good at a subject, helpful, looking a certain way", "What qualities or efforts do people overlook that matter more to you?"],
+      ["About your plans, relationships, progress on goals, how you spend time, whether you're happy, what you're doing with your life", "What is the honest answer, and why don't you want to say it out loud?"],
+      ["First thing you check in morning, what you do when bored, how you feel after scrolling, when you reach for it", "Do you use it intentionally or out of habit, and what would change if you didn't have it for a week?"],
+      ["Complaining, procrastinating, caring too much what people think, making excuses, being on their phone, wasting time, being fake", "Is it easier to see in others, or do you hold yourself to different rules?"],
+      ["Morning habits, how you spend evenings, what you eat, when you sleep, what you do for fun, who you spend time with", "If you could redesign one part of your routine from scratch, what would you change?"],
+      ["Being caring becomes people-pleasing, being careful becomes anxious, being independent becomes isolated, being driven becomes perfectionist", "In what situations does this strength work against you?"],
+      ["Listening to someone, helping with homework/work, being there for a friend, small acts of kindness to strangers, making someone laugh", "What stops you from doing it more—time, energy, not noticing opportunities?"],
+      ["Grades, followers, being funny, being liked, skills, being the \"smart one,\" being first, winning games, achievements", "Is the competition motivating you or stressing you out?"],
+      ["Embarrassment, shame, looking incompetent, being judged, losing respect, disappointing people", "Does your reaction help you move on or keep you stuck?"],
+      
+      // FUTURE 43-61
+      ["Walk through the day: what you wake up to, what you work on, who you see, what you do in the evening, what your space looks like", "Focus on the mundane details—those reveal more than big achievements"],
+      ["Career goals, creative projects, life changes, learning something difficult, competing at something, building something", "What would happen if you said it out loud to one person?"],
+      ["Relationships you didn't pursue, risks you didn't take, places you didn't go, things you didn't create, conversations you didn't have", "Not big achievements necessarily—could be simple experiences or connections"],
+      ["Freedom, impact, relationships, mastery, wealth, creativity, helping others, being respected, being content, adventure", "If no one knew about your success except you, what would make you feel successful?"],
+      ["Create art, travel, learn things, build things, help people, compete, rest, explore, teach, write, make, solve problems", "What's stopping you from doing even a small version of this now?"],
+      ["Ending up alone, failing, disappointing people, being stuck, losing people, not figuring out your path, wasting time, being ordinary", "If the worst happened, how would you actually handle it?"],
+      ["Think beyond career/school: their energy, how they treat people, their confidence, their daily rhythm", "Or flip it: what does that future person NOT do that you currently do?"],
+      ["Reach out more, listen better, be more honest, set boundaries, show up, ask questions, share more, let go of resentment", "Something you can control, not something that requires them to change"],
+      ["Communication, a technical skill, a language, cooking, fitness, art, music, money management, confidence, leadership", "What doors would it open, and what would be different about your daily life?"],
+      ["Living alone vs with people, city vs nature, quiet vs busy, minimalist vs cozy, structured vs flexible, near family vs far", "Even if you can't control your living situation now, what small element could you add to your current space?"],
+      ["Exercise, sleep, nutrition, mental health practices, stretching, hydration, screen time, stress management, posture", "What feels hardest to start, and why?"],
+      ["Learning something, creating something, traveling somewhere, reaching out to someone, trying something new, changing a habit", "What would committing to it actually require—time, money, courage, help?"],
+      ["Skills to learn, relationships to invest in, experiences to have, mistakes to avoid, things not to worry about, risks to take", "What do you wish someone had told you five years ago?"],
+      ["Bitter, closed-off, entitled, burned out, cynical, resentful, stuck, fake, selfish, small-minded", "What small choices compound into becoming that person?"],
+      ["Money stress, relationship issue, health problem, living situation, confidence, clarity about direction, a specific fear", "How much of solving it is actually within your control?"],
+      ["Work that helps people, uses your strengths, lets you create, gives you autonomy, challenges you, aligns with values, pays well", "This could be a job, school, projects, volunteering—anything you put effort into"],
+      ["Close friends, acquaintances, communities, online vs offline, frequency of connection, types of activities, group vs one-on-one", "What would need to change from your current social life to get there?"],
+      ["Starting a project, applying somewhere, sharing your work, trying a skill, having a conversation, making a change", "What's one tiny step you could take this week without being \"ready\"?"],
+      ["How you made people feel, what you created, who you helped, what you stood for, what you taught, the example you set", "Doesn't have to be grand—could be being a good friend, parent, teacher, or creator of one meaningful thing"]
+    ];
+
+    // Validation Functions
+    function countWords(text) {
+      return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+    }
+
+    function detectRepetition(text) {
+      const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+      const sentenceCounts = {};
+      
+      sentences.forEach(s => {
+        const cleaned = s.trim().toLowerCase();
+        sentenceCounts[cleaned] = (sentenceCounts[cleaned] || 0) + 1;
+      });
+      
+      for (let count of Object.values(sentenceCounts)) {
+        if (count >= 3) return true;
+      }
+      return false;
+    }
+
+    function detectGibberish(text) {
+      if (/(.)\1{50,}/.test(text)) return true;
+      
+      const mashPatterns = ['asdf', 'qwer', 'zxcv', 'hjkl', 'uiop'];
+      const lowerText = text.toLowerCase();
+      for (let pattern of mashPatterns) {
+        if (lowerText.includes(pattern.repeat(3))) return true;
+      }
+      
+      return false;
+    }
+
+    function detectMinimumEffort(text) {
+      const words = text.trim().split(/\s+/);
+      const wordCounts = {};
+      
+      words.forEach(w => {
+        const cleaned = w.toLowerCase();
+        wordCounts[cleaned] = (wordCounts[cleaned] || 0) + 1;
+      });
+      
+      for (let count of Object.values(wordCounts)) {
+        if (count >= 20) return true;
+      }
+      
+      return false;
+    }
+
+    function validateAnswer(text) {
+      const wordCount = countWords(text);
+      
+      if (wordCount < 50) {
+        return { valid: false, message: "Answers should be at least 50 words to capture meaningful reflection." };
+      }
+      
+      if (detectGibberish(text)) {
+        return { valid: false, message: "It looks like some responses contain random characters. Try sharing your genuine thoughts!" };
+      }
+      
+      if (detectRepetition(text)) {
+        return { valid: false, message: "It looks like some responses are very similar. Each question is a chance to explore different thoughts!" };
+      }
+      
+      if (detectMinimumEffort(text)) {
+        return { valid: false, message: "We didn't detect enough variety in this entry. Try sharing more of your unique perspective." };
+      }
+      
+      return { valid: true };
+    }
+
+    // State
+    let state = {
+      currentDate: new Date(),
+      timetableData: {},
+      selectedDay: null,
+      contextMenu: null,
+      monthBackgrounds: {},
+      uploadingDay: null,
+      apiKey: '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',
+      insightsLoading: false,
+      insights: null,
+      lastInsightDate: null,
+      currentValidation: null,
+      insightsHistory: [],
+      sidebarCollapsed: false,
+      highlightedDays: [],
+      selectedInsight: null,
+      hintsVisible: false,
+      freeformVisible: false,
+      showSelectionModal: false,
+      selectedEntries: []
+    };
+
+    const monthNames = ["January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"];
+
+    function loadData() {
+      try {
+        const savedTimetable = localStorage.getItem('calendar-timetable-data');
+        const savedBackgrounds = localStorage.getItem('calendar-month-backgrounds');
+        const savedApiKey = localStorage.getItem('calendar-api-key');
+        const savedLastInsight = localStorage.getItem('calendar-last-insight-date');
+        const savedInsights = localStorage.getItem('calendar-insights');
+        const savedInsightsHistory = localStorage.getItem('calendar-insights-history');
+        const savedSidebarCollapsed = localStorage.getItem('calendar-sidebar-collapsed');
+        
+        if (savedTimetable) {
+          state.timetableData = JSON.parse(savedTimetable);
+        }
+        if (savedBackgrounds) {
+          state.monthBackgrounds = JSON.parse(savedBackgrounds);
+        }
+        if (savedApiKey) {
+          state.apiKey = savedApiKey;
+        }
+        if (savedLastInsight) {
+          state.lastInsightDate = savedLastInsight;
+        }
+        if (savedInsights) {
+          state.insights = savedInsights;
+        }
+        if (savedInsightsHistory) {
+          state.insightsHistory = JSON.parse(savedInsightsHistory);
+        }
+        if (savedSidebarCollapsed) {
+          state.sidebarCollapsed = savedSidebarCollapsed === 'true';
+        }
+      } catch (error) {
+        console.log('No saved data found or error loading:', error);
+      }
+    }
+
+    function saveData() {
+      try {
+        localStorage.setItem('calendar-timetable-data', JSON.stringify(state.timetableData));
+        localStorage.setItem('calendar-month-backgrounds', JSON.stringify(state.monthBackgrounds));
+        if (state.apiKey) {
+          localStorage.setItem('calendar-api-key', state.apiKey);
+        }
+        if (state.lastInsightDate) {
+          localStorage.setItem('calendar-last-insight-date', state.lastInsightDate);
+        }
+        if (state.insights) {
+          localStorage.setItem('calendar-insights', state.insights);
+        }
+        localStorage.setItem('calendar-insights-history', JSON.stringify(state.insightsHistory));
+        localStorage.setItem('calendar-sidebar-collapsed', state.sidebarCollapsed);
+      } catch (error) {
+        console.error('Error saving data:', error);
+      }
+    }
+
+    function getQuestionForDate(date) {
+      const daysSinceEpoch = Math.floor(date.getTime() / (1000 * 60 * 60 * 24));
+      const cycle = daysSinceEpoch % 3;
+      
+      let category, questions, hintsOffset;
+      if (cycle === 0) {
+        category = 'PAST';
+        questions = QUESTIONS.PAST;
+        hintsOffset = 0;
+      } else if (cycle === 1) {
+        category = 'PRESENT';
+        questions = QUESTIONS.PRESENT;
+        hintsOffset = 20;
+      } else {
+        category = 'FUTURE';
+        questions = QUESTIONS.FUTURE;
+        hintsOffset = 43;
+      }
+      
+      const questionIndex = Math.floor((daysSinceEpoch / 3)) % questions.length;
+      const globalHintIndex = hintsOffset + questionIndex;
+      
+      return {
+        category,
+        question: questions[questionIndex],
+        index: questionIndex,
+        hints: QUESTION_HINTS[globalHintIndex] || []
+      };
+    }
+
+
+    function countAllUnanalyzed() {
+      const analyzedDays = new Set();
+      state.insightsHistory.forEach(insight => {
+        insight.analyzedDays.forEach(day => analyzedDays.add(day));
+      });
+      
+      let count = 0;
+      Object.keys(state.timetableData).forEach(key => {
+        const data = state.timetableData[key];
+        if (data.questionAnswer && data.questionAnswer.trim() && data.validated) {
+          if (!analyzedDays.has(key)) {
+            count++;
+          }
+        }
+      });
+      return count;
+    }
+
+
+    function getAllUnanalyzedEntries() {
+      const analyzedDays = new Set();
+      state.insightsHistory.forEach(insight => {
+        insight.analyzedDays.forEach(day => analyzedDays.add(day));
+      });
+      
+      const entries = [];
+      Object.keys(state.timetableData).forEach(key => {
+        const data = state.timetableData[key];
+        if (data.questionAnswer && data.questionAnswer.trim() && data.validated) {
+          if (!analyzedDays.has(key)) {
+            const [year, month, day] = key.split('-').map(Number);
+            const date = new Date(year, month, day);
+            entries.push({
+              date,
+              dateKey: key,
+              question: data.question || '',
+              answer: data.questionAnswer,
+              category: data.questionCategory || ''
+            });
+          }
+        }
+      });
+      
+      // Sort by date
+      entries.sort((a, b) => a.date - b.date);
+      return entries;
+    }
+
+    function countNewAnswers() {
+      const analyzedDays = new Set();
+      state.insightsHistory.forEach(insight => {
+        insight.analyzedDays.forEach(day => analyzedDays.add(day));
+      });
+      
+      let count = 0;
+      for (const key of Object.keys(state.timetableData)) {
+        const data = state.timetableData[key];
+        if (data.questionAnswer && data.questionAnswer.trim() && data.validated) {
+          if (!analyzedDays.has(key)) {
+            count++;
+            if (count >= 7) break;
+          }
+        }
+      }
+      return count;
+    }
+
+    function countTotalAnswers() {
+      let count = 0;
+      Object.keys(state.timetableData).forEach(key => {
+        const data = state.timetableData[key];
+        if (data.questionAnswer && data.questionAnswer.trim() && data.validated) {
+          count++;
+        }
+      });
+      return count;
+    }
+
+    function getLast7Questions() {
+      const analyzedDays = new Set();
+      state.insightsHistory.forEach(insight => {
+        insight.analyzedDays.forEach(day => analyzedDays.add(day));
+      });
+      
+      const entries = [];
+      Object.keys(state.timetableData).forEach(key => {
+        const data = state.timetableData[key];
+        if (data.questionAnswer && data.questionAnswer.trim() && data.validated) {
+          if (!analyzedDays.has(key)) {
+            const [year, month, day] = key.split('-').map(Number);
+            const date = new Date(year, month, day);
+            entries.push({
+              date,
+              dateKey: key,
+              question: data.question || '',
+              answer: data.questionAnswer,
+              category: data.questionCategory || ''
+            });
+          }
+        }
+      });
+      
+      entries.sort((a, b) => a.date - b.date);
+      return entries.slice(0, 7);
+    }
+
+    // 4 Analysis Prompts
+    const ANALYSIS_PROMPTS = {
+      evidence: `Analyze the following 7 days of journal entries. Your role is to identify patterns that appear multiple times (3+ instances) in the user's own words. Be specific and cite examples when relevant. Focus only on what's clearly present in the text - do not infer or assume beyond the evidence.
+
+Structure your response in two sections:
+1) RECURRING PATTERNS: List patterns you observe with evidence
+2) UNCLEAR/NEEDS MORE DATA: What's ambiguous or would benefit from more information
+
+Keep response under 200 words, neutral and professional tone. Do not use any names of people mentioned in the entries - refer to them as "a friend," "a relationship," etc.`,
+
+      blindspot: `Read these journal entries looking for blind spots:
+1) Contradictions between stated values and described behaviors
+2) Topics mentioned once then avoided
+3) Patterns of attributing outcomes to external factors vs internal choices
+4) Gaps between what they say they want and what they're actually doing
+
+Be direct but not harsh. Point out only what you have clear evidence for from their own words. Focus on patterns that appear across multiple entries or life areas.
+
+Keep response under 200 words. Do not use any names of people mentioned in the entries - refer to them as "a friend," "someone you mentioned," etc.`,
+
+      growth: `Analyze these entries as if you're a supportive but honest friend. Identify:
+1) Where they're underestimating their own agency
+2) Obstacles they might be able to shift with different perspective
+3) One pattern that, if changed, might unlock progress in multiple areas
+
+Focus on what they can control. Be encouraging but don't sugarcoat. Point out strengths they've demonstrated in the entries themselves - only claim abilities you have evidence for.
+
+Keep response under 200 words. Do not use any names of people mentioned in the entries.`,
+
+      thematic: `Look across all entries for the connecting thread - what's the core tension or theme running through multiple areas of their life? Identify the deeper story beneath the surface complaints or observations.
+
+What's the one insight that ties together different domains (career, relationships, creative work, etc.)? What pattern are they running that shows up everywhere?
+
+Be concise and insightful. Keep response under 150 words. Do not use any names of people mentioned in the entries.`
+    };
+
+
+    function openSelectionModal() {
+      state.showSelectionModal = true;
+      state.selectedEntries = [];
+      render();
+    }
+
+    function closeSelectionModal() {
+      state.showSelectionModal = false;
+      state.selectedEntries = [];
+      render();
+    }
+
+    function toggleEntrySelection(dateKey) {
+      const index = state.selectedEntries.indexOf(dateKey);
+      if (index > -1) {
+        state.selectedEntries.splice(index, 1);
+      } else {
+        if (state.selectedEntries.length < 7) {
+          state.selectedEntries.push(dateKey);
+        }
+      }
+      render();
+    }
+
+    function generateSelectedInsights() {
+      if (state.selectedEntries.length !== 7) {
+        alert('Please select exactly 7 entries');
+        return;
+      }
+      
+      // Close selection modal
+      state.showSelectionModal = false;
+      
+      // Generate insights for selected entries
+      generateInsightsForEntries(state.selectedEntries);
+    }
+
+    function generateInsightsForEntries(selectedKeys) {
+      if (!state.apiKey) {
+        alert('Please enter your Anthropic API key first');
+        return;
+      }
+
+      state.insightsLoading = true;
+      render();
+
+      // Get the selected entries
+      const entries = [];
+      selectedKeys.forEach(key => {
+        const data = state.timetableData[key];
+        if (data && data.questionAnswer && data.validated) {
+          const [year, month, day] = key.split('-').map(Number);
+          const date = new Date(year, month, day);
+          let fullAnswer = data.questionAnswer;
+          if (data.freeform && data.freeform.trim()) {
+            fullAnswer += '\n\nAdditional thoughts: ' + data.freeform;
+          }
+          entries.push({
+            date,
+            dateKey: key,
+            question: data.question || '',
+            answer: fullAnswer,
+            category: data.questionCategory || ''
+          });
+        }
+      });
+
+      // Sort by date
+      entries.sort((a, b) => a.date - b.date);
+
+      const formattedEntries = entries.map((entry, i) => `
+Entry ${i + 1} (${entry.date.toDateString()})
+Category: ${entry.category}
+Question: ${entry.question}
+Answer: ${entry.answer}
+`).join('\n---\n');
+
+      // Make 4 parallel API calls
+      (async () => {
+        try {
+          const analysisPromises = Object.keys(ANALYSIS_PROMPTS).map(async (type) => {
+            const fullPrompt = `${ANALYSIS_PROMPTS[type]}\n\nJOURNAL ENTRIES:\n\n${formattedEntries}`;
+            
+            const response = await fetch('https://calendar-journal-api.onrender.com/ask-ai', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                prompt: fullPrompt
+              })
+            });
+
+            const data = await response.json();
+            return { type, text: data.text || 'Error generating analysis' };
+          });
+
+          const analyses = await Promise.all(analysisPromises);
+          
+          const analysisResults = {};
+          analyses.forEach(a => {
+            analysisResults[a.type] = a.text;
+          });
+
+          const newInsight = {
+            id: Date.now(),
+            date: new Date().toISOString(),
+            analyzedDays: selectedKeys,
+            dateRange: `${entries[0].date.toLocaleDateString('en-US', {month: 'short', day: 'numeric'})} - ${entries[entries.length-1].date.toLocaleDateString('en-US', {month: 'short', day: 'numeric'})}`,
+            analyses: analysisResults
+          };
+          state.insightsHistory.push(newInsight);
+          
+          state.insights = `Evidence-Based:\n${analysisResults.evidence}\n\nBlind Spots:\n${analysisResults.blindspot}\n\nGrowth:\n${analysisResults.growth}\n\nThematic:\n${analysisResults.thematic}`;
+          state.lastInsightDate = selectedKeys[selectedKeys.length-1];
+          
+          state.selectedInsight = newInsight;
+          
+          saveData();
+                
+        } catch (error) {
+          alert('Error connecting to AI service: ' + error.message);
+        }
+
+        state.insightsLoading = false;
+        render();
+      })();
+    }
+
+    async function generateInsights() {
+      if (!state.apiKey) {
+        alert('Please enter your Anthropic API key first');
+        return;
+      }
+
+      const last7 = getLast7Questions();
+      if (last7.length < 7) {
+        alert('You need to answer at least 7 new unanalyzed questions before getting AI insights');
+        return;
+      }
+      
+      // If more than 7 entries, open selection modal
+      const totalUnanalyzed = countAllUnanalyzed();
+      if (totalUnanalyzed > 7) {
+        openSelectionModal();
+        return;
+      }
+
+      state.insightsLoading = true;
+      render();
+
+      const formattedEntries = last7.map((entry, i) => `
+Entry ${i + 1} (${entry.date.toDateString()})
+Category: ${entry.category}
+Question: ${entry.question}
+Answer: ${entry.answer}
+`).join('\n---\n');
+
+      try {
+        // Make 4 parallel API calls
+        const analysisPromises = Object.keys(ANALYSIS_PROMPTS).map(async (type) => {
+          const fullPrompt = `${ANALYSIS_PROMPTS[type]}\n\nJOURNAL ENTRIES:\n\n${formattedEntries}`;
+          
+          const response = await fetch('https://calendar-journal-api.onrender.com/ask-ai', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              prompt: fullPrompt
+            })
+          });
+
+          const data = await response.json();
+          return { type, text: data.text || 'Error generating analysis' };
+        });
+
+        const analyses = await Promise.all(analysisPromises);
+        
+        // Structure the results
+        const analysisResults = {};
+        analyses.forEach(a => {
+          analysisResults[a.type] = a.text;
+        });
+
+        // Add to insights history
+        const newInsight = {
+          id: Date.now(),
+          date: new Date().toISOString(),
+          analyzedDays: last7.map(e => e.dateKey),
+          dateRange: `${last7[0].date.toLocaleDateString('en-US', {month: 'short', day: 'numeric'})} - ${last7[last7.length-1].date.toLocaleDateString('en-US', {month: 'short', day: 'numeric'})}`,
+          analyses: analysisResults
+        };
+        state.insightsHistory.push(newInsight);
+        
+        // Keep old format for backward compatibility
+        state.insights = `Evidence-Based:\n${analysisResults.evidence}\n\nBlind Spots:\n${analysisResults.blindspot}\n\nGrowth:\n${analysisResults.growth}\n\nThematic:\n${analysisResults.thematic}`;
+        state.lastInsightDate = last7[last7.length-1].dateKey;
+        
+        // Show the insight immediately
+        state.selectedInsight = newInsight;
+        
+        saveData();
+              
+      } catch (error) {
+        alert('Error connecting to AI service: ' + error.message);
+      }
+
+      state.insightsLoading = false;
+      render();
+    }
+
+    async function exportPrompt() {
+      const last7 = getLast7Questions();
+      if (last7.length < 7) {
+        alert('You need to answer at least 7 questions before exporting a prompt');
+        return;
+      }
+
+      const formattedEntries = last7.map((entry, i) => `
+Entry ${i + 1} (${entry.date.toDateString()})
+Category: ${entry.category}
+Question: ${entry.question}
+Answer: ${entry.answer}
+`).join('\n---\n');
+
+      try {
+        const response = await fetch('https://calendar-journal-api.onrender.com/export-prompt', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            entries: formattedEntries,
+            dateRange: `${last7[0].date.toLocaleDateString('en-US', {month: 'short', day: 'numeric'})} - ${last7[last7.length-1].date.toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}`
+          })
+        });
+
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `journal-insight-prompt-${new Date().toISOString().split('T')[0]}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        } else {
+          alert('Error generating PDF. Make sure Flask backend is running.');
+        }
+      } catch (error) {
+        alert('Error exporting prompt: ' + error.message);
+      }
+    }
+
+    function getDaysInMonth(date) {
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const daysInMonth = lastDay.getDate();
+      const startingDayOfWeek = firstDay.getDay();
+      return { daysInMonth, startingDayOfWeek };
+    }
+
+    function getDateKey(day) {
+      return state.currentDate.getFullYear() + '-' + state.currentDate.getMonth() + '-' + day;
+    }
+
+    function getMonthKey() {
+      return state.currentDate.getFullYear() + '-' + state.currentDate.getMonth();
+    }
+
+    function previousMonth() {
+      state.currentDate = new Date(state.currentDate.getFullYear(), state.currentDate.getMonth() - 1);
+      render();
+    }
+
+    function nextMonth() {
+      state.currentDate = new Date(state.currentDate.getFullYear(), state.currentDate.getMonth() + 1);
+      render();
+    }
+
+    function openTimetable(day) {
+      state.selectedDay = day;
+      state.currentValidation = null;
+      state.hintsVisible = false;
+      state.freeformVisible = false;
+      render();
+    }
+
+    function closeTimetable() {
+      state.selectedDay = null;
+      state.freeformVisible = false;
+      render();
+    }
+
+    function toggleHints() {
+      state.hintsVisible = !state.hintsVisible;
+      render();
+    }
+
+    let typingTimer;
+    const typingDelay = 1000;
+
+    function updateQuestionAnswer(value, event) {
+      const key = getDateKey(state.selectedDay);
+      if (!state.timetableData[key]) {
+        state.timetableData[key] = {};
+      }
+      
+      state.timetableData[key].questionAnswer = value;
+      
+      if (event && event.shiftKey && event.key === 'Enter') {
+        const date = new Date(state.currentDate.getFullYear(), state.currentDate.getMonth(), state.selectedDay);
+        const questionData = getQuestionForDate(date);
+        state.timetableData[key].question = questionData.question;
+        state.timetableData[key].questionCategory = questionData.category;
+        state.timetableData[key].validated = true;
+        state.currentValidation = null;
+        saveData();
+        updateWordCount();
+        return;
+      }
+      
+      saveData();
+      updateWordCount();
+      clearTimeout(typingTimer);
+      
+      typingTimer = setTimeout(() => {
+        if (value.trim().length > 20) {
+          const validation = validateAnswer(value);
+          state.currentValidation = validation;
+          
+          if (validation.valid) {
+            const date = new Date(state.currentDate.getFullYear(), state.currentDate.getMonth(), state.selectedDay);
+            const questionData = getQuestionForDate(date);
+            state.timetableData[key].question = questionData.question;
+            state.timetableData[key].questionCategory = questionData.category;
+            state.timetableData[key].validated = true;
+          } else {
+            state.timetableData[key].validated = false;
+          }
+          saveData();
+          updateValidationUI();
+        }
+      }, typingDelay);
+    }
+
+    function updateWordCount() {
+      const textarea = document.getElementById('question-answer');
+      const wordCountEl = document.getElementById('word-count');
+      if (textarea && wordCountEl) {
+        const count = countWords(textarea.value);
+        let className = 'word-count';
+        if (count >= 50) className += ' good';
+        else if (count >= 30) className += ' warning';
+        else className += ' error';
+        wordCountEl.className = className;
+        wordCountEl.textContent = count + ' / 50 words';
+      }
+    }
+
+    function updateValidationUI() {
+      const validationEl = document.getElementById('validation-warning');
+      const textarea = document.getElementById('question-answer');
+      
+      if (state.currentValidation && !state.currentValidation.valid) {
+        if (textarea) textarea.classList.add('invalid');
+        if (validationEl) {
+          validationEl.style.display = 'block';
+          validationEl.textContent = state.currentValidation.message;
+        }
+      } else {
+        if (textarea) textarea.classList.remove('invalid');
+        if (validationEl) validationEl.style.display = 'none';
+      }
+    }
+
+    function updateTimetableField(field, value) {
+      const key = getDateKey(state.selectedDay);
+      if (!state.timetableData[key]) {
+        state.timetableData[key] = {};
+      }
+      state.timetableData[key][field] = value;
+      saveData();
+    }
+
+    function updateApiKey(key) {
+      state.apiKey = key;
+      saveData();
+    }
+
+    function handleContextMenu(e, day) {
+      e.preventDefault();
+      state.contextMenu = {
+        x: e.clientX,
+        y: e.clientY,
+        day: day
+      };
+      render();
+    }
+
+    function handleAddImage(day) {
+      state.uploadingDay = day;
+      state.contextMenu = null;
+      document.getElementById('day-image-input').click();
+    }
+
+    function handleDayImageUpload(e) {
+      const file = e.target.files[0];
+      if (file && state.uploadingDay) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const key = getDateKey(state.uploadingDay);
+          if (!state.timetableData[key]) {
+            state.timetableData[key] = {};
+          }
+          state.timetableData[key].image = event.target.result;
+          saveData();
+          render();
+        };
+        reader.readAsDataURL(file);
+      }
+      e.target.value = '';
+      state.uploadingDay = null;
+    }
+
+    function handleBackgroundUpload(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const monthKey = getMonthKey();
+          state.monthBackgrounds[monthKey] = event.target.result;
+          saveData();
+          render();
+        };
+        reader.readAsDataURL(file);
+      }
+      e.target.value = '';
+    }
+
+    function removeBackground() {
+      const monthKey = getMonthKey();
+      delete state.monthBackgrounds[monthKey];
+      saveData();
+      render();
+    }
+
+    function removeImage(day) {
+      const key = getDateKey(day);
+      if (state.timetableData[key]) {
+        delete state.timetableData[key].image;
+        saveData();
+        render();
+      }
+    }
+
+    function toggleSidebar() {
+      state.sidebarCollapsed = !state.sidebarCollapsed;
+      saveData();
+      render();
+    }
+
+    function highlightInsight(insight) {
+      state.highlightedDays = insight.analyzedDays;
+      state.selectedInsight = insight;
+      render();
+    }
+
+    function clearHighlight() {
+      state.highlightedDays = [];
+      state.selectedInsight = null;
+      render();
+    }
+
+    function closeInsightModal() {
+      state.selectedInsight = null;
+      state.highlightedDays = [];
+      render();
+    }
+
+
+    function highlightInsightByIndex(index) {
+      const insight = state.insightsHistory[index];
+      if (insight) {
+        state.highlightedDays = insight.analyzedDays || [];
+        state.selectedInsight = insight;
+        render();
+      }
+    }
+
+    function deleteInsight(index) {
+      if (confirm('Delete this insight? Those entries will become available for analysis again.')) {
+        state.insightsHistory.splice(index, 1);
+        if (state.selectedInsight) {
+          state.selectedInsight = null;
+          state.highlightedDays = [];
+        }
+        saveData();
+        render();
+      }
+    }
+
+    function clearHighlights() {
+      state.highlightedDays = [];
+      state.selectedInsight = null;
+      render();
+    }
+
+    function toggleInsightMenu(index) {
+      // Close all menus
+      setTimeout(() => {
+        const allMenus = document.querySelectorAll('.insight-menu-dropdown');
+        allMenus.forEach((menu, i) => {
+          if (i !== index) {
+            menu.style.display = 'none';
+          }
+        });
+        const menu = document.querySelectorAll('.insight-menu-dropdown')[index];
+        if (menu) {
+          menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        }
+      }, 0);
+    }
+
+    function render() {
+      const { daysInMonth, startingDayOfWeek } = getDaysInMonth(state.currentDate);
+      const currentBackground = state.monthBackgrounds[getMonthKey()];
+      const today = new Date();
+      const newAnswerCount = countNewAnswers();
+      const totalAnswerCount = countTotalAnswers();
+      
+      let containerStyle = (currentBackground ? 'background: url(' + currentBackground + ') center/cover fixed;' : '');
+      if (!state.sidebarCollapsed) {
+        containerStyle += ' padding-right: 340px;';
+      }
+      
+      let html = '<div class="container" style="' + containerStyle + '" onclick="state.contextMenu = null; render();">';
+      
+      if (currentBackground) {
+        html += '<div class="background-overlay"></div>';
+      }
+      
+      html += '<input type="file" id="day-image-input" accept="image/*" class="hidden" onchange="handleDayImageUpload(event)">';
+      html += '<input type="file" id="bg-image-input" accept="image/*" class="hidden" onchange="handleBackgroundUpload(event)">';
+      
+      html += '<div class="calendar-wrapper">';
+      html += '<div class="calendar-card">';
+      html += '<div class="calendar-header">';
+      html += '<h2 class="calendar-title">' + monthNames[state.currentDate.getMonth()] + ' ' + state.currentDate.getFullYear() + '</h2>';
+      html += '<div class="header-controls">';
+      
+      // Export Prompt button (always available with 7+ entries)
+      if (newAnswerCount >= 7) {
+        html += '<button class="btn" style="background-color: #10b981; color: white;" onclick="exportPrompt()">📄 Export Prompt (Free)</button>';
+        html += '<div class="divider"></div>';
+      }
+      
+      // Generate Insights button (requires API key)
+      if (state.apiKey) {
+        if (state.insightsLoading) {
+          html += '<button class="btn btn-primary" disabled>🧠 Generating 4 analyses...</button>';
+        } else if (newAnswerCount < 7) {
+          // Show disabled button when less than 7 entries
+          html += '<button class="btn" style="background-color: #d1d5db; color: #9ca3af; cursor: not-allowed;" onclick="alert(\'You need 7 unanalyzed entries to generate insights. Current: ' + newAnswerCount + '/7\')">🧠 AI Insights (' + newAnswerCount + '/7)</button>';
+        } else {
+          const totalCount = countAllUnanalyzed();
+          const displayCount = totalCount > 7 ? totalCount : newAnswerCount;
+          const buttonText = totalCount > 7 ? '🧠 Select & Analyze (' + displayCount + ')' : '🧠 Auto Insights (' + displayCount + ')';
+          html += '<button class="btn btn-primary" onclick="generateInsights()">' + buttonText + '</button>';
+        }
+        html += '<div class="divider"></div>';
+      }
+      
+      html += '<button class="btn" onclick="document.getElementById(\'bg-image-input\').click();">';
+      html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>';
+      html += 'Theme</button>';
+      
+      if (currentBackground) {
+        html += '<button class="btn btn-remove" onclick="removeBackground()">Remove</button>';
+      }
+      
+      html += '<div class="divider"></div>';
+      html += '<button class="btn" onclick="previousMonth()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>';
+      html += '<button class="btn" onclick="nextMonth()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></button>';
+      html += '</div></div>';
+      
+      html += '<div class="calendar-body">';
+      html += '<div class="calendar-grid">';
+      
+      ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(day => {
+        html += '<div class="day-header">' + day + '</div>';
+      });
+      
+      for (let i = 0; i < startingDayOfWeek; i++) {
+        html += '<div class="day-cell" style="background: #f5f4f0;"></div>';
+      }
+      
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateKey = getDateKey(day);
+        const dayData = state.timetableData[dateKey] || {};
+        const hasQuestionAnswer = dayData.questionAnswer && dayData.questionAnswer.trim() && dayData.validated;
+        const hasImage = dayData.image;
+        const isToday = day === today.getDate() && state.currentDate.getMonth() === today.getMonth() && state.currentDate.getFullYear() === today.getFullYear();
+        const isHighlighted = state.highlightedDays.includes(dateKey);
+        
+        html += '<div class="day-cell' + (isHighlighted ? ' highlighted' : '') + '" onclick="openTimetable(' + day + ')" oncontextmenu="handleContextMenu(event, ' + day + ')">';
+        if (hasImage) {
+          html += '<img src="' + hasImage + '" class="day-image" alt="Day ' + day + '">';
+        }
+        html += '<div class="day-number' + (isToday ? ' today' : '') + '">' + day + '</div>';
+        
+        if (hasQuestionAnswer) {
+          html += '<div class="day-indicators">';
+          html += '<div class="day-tick">✓</div>';
+          html += '</div>';
+        }
+        
+        html += '</div>';
+      }
+      
+      html += '</div></div></div></div>';
+      
+      if (state.contextMenu) {
+        const dateKey = getDateKey(state.contextMenu.day);
+        const hasImage = state.timetableData[dateKey] && state.timetableData[dateKey].image;
+        
+        html += '<div class="context-menu" style="left: ' + state.contextMenu.x + 'px; top: ' + state.contextMenu.y + 'px;" onclick="event.stopPropagation()">';
+        html += '<button class="context-menu-item" onclick="handleAddImage(' + state.contextMenu.day + ')"><span>📷</span> Add Image</button>';
+        if (hasImage) {
+          html += '<button class="context-menu-item danger" onclick="removeImage(' + state.contextMenu.day + '); state.contextMenu = null; render();"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Remove Image</button>';
+        }
+        html += '</div>';
+      }
+      
+      if (state.selectedDay) {
+        const data = state.timetableData[getDateKey(state.selectedDay)] || {};
+        const date = new Date(state.currentDate.getFullYear(), state.currentDate.getMonth(), state.selectedDay);
+        const questionData = getQuestionForDate(date);
+        const wordCount = countWords(data.questionAnswer || '');
+        const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        
+        // Category class
+        const catClass = 'cat-' + questionData.category.toLowerCase();
+        const catPillClass = 'category-' + questionData.category.toLowerCase();
+        
+        html += '<div class="journal-overlay ' + catClass + '" onclick="event.stopPropagation()">';
+        
+        // Top bar
+        html += '<div class="journal-topbar">';
+        html += '<div class="topbar-left">';
+        html += '<div class="topbar-date">' + monthNames[state.currentDate.getMonth()] + ' ' + state.selectedDay + ', ' + state.currentDate.getFullYear() + '</div>';
+        html += '<div class="topbar-day">' + dayNames[date.getDay()] + '</div>';
+        html += '</div>';
+        html += '<button class="close-btn" onclick="closeTimetable()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>';
+        html += '</div>';
+        
+        // Main content
+        html += '<div class="journal-main">';
+        
+        // Image preview
+        if (data.image) {
+          html += '<div class="journal-image-preview">';
+          html += '<img src="' + data.image + '" alt="Daily photo">';
+          html += '<button class="journal-image-remove" onclick="removeImage(' + state.selectedDay + ')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>';
+          html += '</div>';
+        }
+        
+        // Question banner
+        html += '<div class="question-banner">';
+        html += '<div class="question-meta">';
+        html += '<span class="category-pill ' + catPillClass + '">' + questionData.category + '</span>';
+        html += '<span class="question-number">Question ' + (questionData.index + 1) + ' of 20</span>';
+        html += '</div>';
+        html += '<div class="question-text">' + questionData.question + '</div>';
+        
+        // Hints
+        if (questionData.hints && questionData.hints.length > 0) {
+          html += '<button class="hints-toggle" onclick="event.stopPropagation(); toggleHints();">';
+          html += '<span style="font-size: 18px;">💡</span> ' + (state.hintsVisible ? 'Hide hints' : 'Need help getting started?');
+          html += '</button>';
+          
+          if (state.hintsVisible) {
+            html += '<div class="hints-content">';
+            html += '<strong style="font-size: 12px; color: #8a8780; text-transform: uppercase; letter-spacing: 0.8px;">Angles to explore</strong>';
+            html += '<ul>';
+            questionData.hints.forEach(hint => {
+              html += '<li>' + hint + '</li>';
+            });
+            html += '</ul>';
+            html += '</div>';
+          }
+        }
+        
+        html += '</div>';
+        
+        // Writing area
+        html += '<div class="writing-section">';
+        html += '<textarea id="question-answer" placeholder="Start writing..." class="' + (state.currentValidation && !state.currentValidation.valid ? 'invalid' : '') + '" oninput="updateQuestionAnswer(this.value, null)" onkeydown="if(event.key===\'Enter\' && event.shiftKey) updateQuestionAnswer(this.value, event)">' + (data.questionAnswer || '') + '</textarea>';
+        html += '</div>';
+        
+        // Footer
+        let wordCountClass = '';
+        if (wordCount >= 50) wordCountClass = 'good';
+        else if (wordCount >= 30) wordCountClass = 'warning';
+        else wordCountClass = 'error';
+        
+        html += '<div class="writing-footer">';
+        html += '<div id="word-count" class="word-count ' + wordCountClass + '">' + wordCount + ' / 50 words</div>';
+        html += '<div class="save-indicator"><span class="save-dot"></span> Auto-saved</div>';
+        html += '</div>';
+        
+        // Validation warning
+        html += '<div id="validation-warning" class="validation-warning" style="' + (state.currentValidation && !state.currentValidation.valid ? '' : 'display: none;') + '">' + (state.currentValidation ? state.currentValidation.message : '') + '</div>';
+        
+        // Freeform section
+        const hasFreeform = data.freeform && data.freeform.trim();
+        html += '<div class="freeform-section">';
+        html += '<button class="freeform-toggle" onclick="event.stopPropagation(); state.freeformVisible = !state.freeformVisible; render();">';
+        html += '💭 Add freeform thoughts <span style="font-size: 13px; color: #c4c1bb; font-weight: 400;">(optional)</span>';
+        html += '</button>';
+        
+        if (state.freeformVisible || hasFreeform) {
+          html += '<div class="freeform-content">';
+          html += '<textarea class="freeform-textarea" placeholder="Anything else on your mind..." oninput="updateTimetableField(\'freeform\', this.value)">' + (data.freeform || '') + '</textarea>';
+          html += '</div>';
+        }
+        
+        html += '</div>';
+        
+        html += '</div>'; // journal-main
+        html += '</div>'; // journal-overlay
+      }
+      
+      // INSIGHTS SIDEBAR
+      html += '<div class="insights-sidebar' + (state.sidebarCollapsed ? ' collapsed' : '') + '">';
+      html += '<div class="sidebar-header">';
+      html += '<div class="sidebar-title">🧠 Insights History</div>';
+      html += '</div>';
+      html += '<div class="sidebar-content">';
+      
+      if (state.insightsHistory.length === 0) {
+        html += '<div class="empty-insights">';
+        html += '<p>No insights yet!</p>';
+        html += '<p style="margin-top: 8px; font-size: 12px;">Answer 7 questions to generate your first insight.</p>';
+        html += '</div>';
+      } else {
+        // Render insights in reverse order (newest first)
+        // Sort insights by date (newest first)
+        const sortedInsights = [...state.insightsHistory].sort((a, b) => {
+          return new Date(b.date) - new Date(a.date);
+        });
+        
+        sortedInsights.forEach((insight, index) => {
+          const originalIndex = state.insightsHistory.indexOf(insight);
+          const isActive = JSON.stringify(state.highlightedDays) === JSON.stringify(insight.analyzedDays);
+          
+          html += '<div class="insight-entry' + (isActive ? ' active' : '') + '" onclick="highlightInsightByIndex(' + originalIndex + ')" style="padding: 10px 16px;">';
+          html += '<div style="display: flex; justify-content: space-between; align-items: center;">';
+          html += '<div class="insight-date" style="font-size: 13px; color: #374151; font-weight: 500;">' + insight.dateRange + '</div>';
+          html += '<div style="position: relative;">';
+          html += '<button onclick="event.stopPropagation(); toggleInsightMenu(' + index + ');" style="background: transparent; border: none; color: #9ca3af; cursor: pointer; padding: 4px 6px; font-size: 16px; line-height: 1;">⋮</button>';
+          html += '<div class="insight-menu-dropdown" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #e5e7eb; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 100; min-width: 120px;">';
+          html += '<button onclick="event.stopPropagation(); deleteInsight(' + originalIndex + ');" style="width: 100%; text-align: left; padding: 8px 12px; background: transparent; border: none; color: #dc2626; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px;" onmouseover="this.style.background=\'#fee2e2\'" onmouseout="this.style.background=\'transparent\'"><span>🗑️</span> Delete</button>';
+          html += '</div>';
+          html += '</div>';
+          html += '</div>';
+          html += '</div>';
+        })
+      }
+      
+      html += '</div>';
+      html += '</div>';
+      
+      // Sidebar toggle button
+      html += '<button class="sidebar-toggle' + (state.sidebarCollapsed ? ' collapsed' : '') + '" onclick="toggleSidebar()">';
+      html += (state.sidebarCollapsed ? '◀' : '▶');
+      html += '</button>';
+      
+      // 4-ANALYSIS GRID MODAL
+      if (state.selectedInsight) {
+        const hasAnalyses = state.selectedInsight.analyses;
+        html += '<div class="insight-modal-overlay" onclick="closeInsightModal()">';
+        html += '<div class="analysis-grid-modal" onclick="event.stopPropagation()">';
+        html += '<div style="padding: 28px 32px 20px; border-bottom: 1px solid #e8e6e1; display: flex; align-items: flex-start; justify-content: space-between; position: sticky; top: 0; background: #fafaf8; z-index: 10; border-radius: 20px 20px 0 0;">';
+        html += '<div>';
+        html += '<div class="insight-modal-title">Four Perspectives on Your Entries</div>';
+        html += '<div class="insight-modal-meta">' + new Date(state.selectedInsight.date).toLocaleDateString('en-US', {month: 'long', day: 'numeric', year: 'numeric'}) + ' • ' + state.selectedInsight.dateRange + '</div>';
+        html += '</div>';
+        html += '<button class="close-btn" onclick="closeInsightModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b6860" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>';
+        html += '</div>';
+        
+        // Check if old format (no analyses object)
+        if (!hasAnalyses) {
+          html += '<div class="insight-modal-body">';
+          const insightText = state.selectedInsight.text || state.selectedInsight.insights || String(state.selectedInsight);
+          html += '<div class="insight-modal-text">' + insightText + '</div>';
+          html += '</div>';
+          html += '</div>';
+          html += '</div>';
+        } else {
+          // New format with 4 analyses
+          html += '<div class="analysis-grid">';
+        
+        // Evidence-Based
+        html += '<div class="analysis-card evidence">';
+        html += '<div class="analysis-card-header"><div class="analysis-card-icon">🔍</div><div class="analysis-card-header-text">';
+        html += '<div class="analysis-card-title">Evidence-Based Pattern Detector</div>';
+        html += '<div class="analysis-card-description">Neutral observation of recurring patterns</div>';
+        html += '</div></div>';
+        html += '<div class="analysis-card-content">' + (state.selectedInsight.analyses.evidence || 'No analysis available') + '</div>';
+        html += '</div>';
+        
+        // Blind Spot
+        html += '<div class="analysis-card blindspot">';
+        html += '<div class="analysis-card-header"><div class="analysis-card-icon">🎯</div><div class="analysis-card-header-text">';
+        html += '<div class="analysis-card-title">Blind Spot Hunter</div>';
+        html += '<div class="analysis-card-description">Contradictions and avoidance patterns</div>';
+        html += '</div></div>';
+        html += '<div class="analysis-card-content">' + (state.selectedInsight.analyses.blindspot || 'No analysis available') + '</div>';
+        html += '</div>';
+        
+        // Growth
+        html += '<div class="analysis-card growth">';
+        html += '<div class="analysis-card-header"><div class="analysis-card-icon">🌱</div><div class="analysis-card-header-text">';
+        html += '<div class="analysis-card-title">Growth-Oriented Mirror</div>';
+        html += '<div class="analysis-card-description">Agency-focused, actionable insights</div>';
+        html += '</div></div>';
+        html += '<div class="analysis-card-content">' + (state.selectedInsight.analyses.growth || 'No analysis available') + '</div>';
+        html += '</div>';
+        
+        // Thematic
+        html += '<div class="analysis-card thematic">';
+        html += '<div class="analysis-card-header"><div class="analysis-card-icon">🔗</div><div class="analysis-card-header-text">';
+        html += '<div class="analysis-card-title">Thematic Synthesizer</div>';
+        html += '<div class="analysis-card-description">The connecting thread across your life</div>';
+        html += '</div></div>';
+        html += '<div class="analysis-card-content">' + (state.selectedInsight.analyses.thematic || 'No analysis available') + '</div>';
+        html += '</div>';
+        
+        html += '</div>';
+        html += '</div>';
+        html += '</div>';
+        }
+      }
+      
+      html += '</div>';
+      
+      
+      // SELECTION MODAL
+      if (state.showSelectionModal) {
+        const allEntries = getAllUnanalyzedEntries();
+        
+        html += '<div class="selection-modal-overlay" onclick="closeSelectionModal()">';
+        html += '<div class="selection-modal" onclick="event.stopPropagation()">';
+        
+        // Header
+        html += '<div class="selection-modal-header">';
+        html += '<div class="selection-modal-title">🎯 Select 7 Entries to Analyze</div>';
+        html += '<div class="selection-modal-subtitle">You have ' + allEntries.length + ' unanalyzed entries. Choose exactly 7 to generate insights.</div>';
+        html += '</div>';
+        
+        // Body
+        html += '<div class="selection-modal-body">';
+        
+        allEntries.forEach(entry => {
+          const isSelected = state.selectedEntries.includes(entry.dateKey);
+          const answerPreview = entry.answer.substring(0, 80) + (entry.answer.length > 80 ? '...' : '');
+          
+          html += '<label class="entry-checkbox' + (isSelected ? ' selected' : '') + '">';
+          html += '<input type="checkbox" ' + (isSelected ? 'checked' : '') + ' onchange="toggleEntrySelection(\'' + entry.dateKey + '\')" ' + (!isSelected && state.selectedEntries.length >= 7 ? 'disabled' : '') + '>';
+          html += '<div class="entry-info">';
+          html += '<div class="entry-date">' + entry.date.toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}) + ' - ' + entry.category + '</div>';
+          html += '<div class="entry-question">' + entry.question + '</div>';
+          html += '<div class="entry-preview">' + answerPreview + '</div>';
+          html += '</div>';
+          html += '</label>';
+        });
+        
+        html += '</div>';
+        
+        // Footer
+        html += '<div class="selection-modal-footer">';
+        html += '<div class="selection-count' + (state.selectedEntries.length === 7 ? ' complete' : '') + '">';
+        html += state.selectedEntries.length + ' of 7 selected';
+        html += '</div>';
+        html += '<div class="selection-actions">';
+        html += '<button class="btn" onclick="closeSelectionModal()">Cancel</button>';
+        if (state.selectedEntries.length === 7) {
+          html += '<button class="btn btn-primary" onclick="generateSelectedInsights()">🧠 Generate Insights</button>';
+        } else {
+          html += '<button class="btn" disabled style="opacity: 0.5;">Select 7 to continue</button>';
+        }
+        html += '</div>';
+        html += '</div>';
+        
+        html += '</div>';
+        html += '</div>';
+      }
+      
+      document.getElementById('app').innerHTML = html;
+    }
+
+    loadData();
+    render();
+  </script>
+</body>
+</html>
