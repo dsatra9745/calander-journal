@@ -10,7 +10,8 @@ app = Flask(__name__)
 CORS(app)
 
 # API KEY
-ANTHROPIC_API_KEY = "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"
+import os
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
 @app.route("/ask-ai", methods=["POST"])
 def ask_ai():
