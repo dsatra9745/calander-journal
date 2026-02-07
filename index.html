@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Productivity Calendar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+    
+    <!-- Supabase JS Library -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+    <div class="auth-container">
+        <h1 class="auth-title">Daily Journal</h1>
+        <p class="auth-subtitle">Track your thoughts, discover patterns</p>
+        
+        <div id="auth-message"></div>
+        
+        <form id="auth-form" class="auth-form">
+            <input type="email" id="auth-email" class="auth-input" placeholder="Email" required>
+            <input type="password" id="auth-password" class="auth-input" placeholder="Password" required minlength="6">
+            <button type="submit" id="auth-submit" class="auth-button">Sign In</button>
+        </form>
+        
+        <div class="auth-toggle">
+            <span id="auth-toggle-text">Don't have an account?</span>
+            <button type="button" id="auth-toggle-btn">Sign Up</button>
+        </div>
+        
+        <div class="auth-forgot">
+            <button type="button" id="forgot-password-btn">Forgot password?</button>
+        </div>
+    </div>
+</div>
+
+<!-- APP SCREEN -->
+<div id="app-screen">
+    <div class="app-header">
+        <button class="logout-btn" onclick="handleLogout()">Logout</button>
+    </div>
+
+    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">▶</button>
+
+    <div class="container">
+        <div class="calendar-card">
+            <div class="calendar-header">
+                <h1 class="month-title" id="monthTitle"></h1>
+                <div class="nav-buttons">
+                    <button class="nav-btn" onclick="changeMonth(-1)">←</button>
+                    <button class="nav-btn" onclick="changeMonth(0)">Today</button>
+                    <button class="nav-btn" onclick="changeMonth(1)">→</button>
+                    <button class="btn-primary" onclick="generateInsights()" id="generateBtn" style="margin-left: 16px;">
+                        🧠 AI Insights
+                    </button>
+                </div>
+            </div>
+            <div id="calendar" class="calendar-grid"></div>
+        </div>
+    </div>
+
+    <div class="insights-sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2 class="sidebar-title">🧠 Insights History</h2>
+        </div>
+        <button class="export-pdf-btn" onclick="exportToPDF()">
+            Export Prompts (PDF)
+        </button>
+        <div class="insights-list" id="insightsList"></div>
+    </div>
+</div>
+
+<!-- Journal Writing Overlay -->
+<div class="journal-overlay" id="journalOverlay">
+    <button class="journal-close" onclick="closeJournal()">×</button>
+    <div class="journal-container">
+        <div class="question-banner" id="questionBanner">
+            <div class="question-category" id="questionCategory"></div>
+            <div class="question-text" id="questionText"></div>
+        </div>
+
+        <div class="hint-section">
+            <button class="hint-toggle" onclick="toggleHints()">
+                💡 Need help getting started?
+            </button>
+            <div class="hint-content" id="hintContent"></div>
+        </div>
+
+        <div class="writing-area">
+            <label class="writing-label">Your Response</label>
+            <textarea 
+                class="journal-textarea" 
+                id="journalAnswer" 
+                placeholder="Start writing..."
+                oninput="handleAnswerInput(event)"
+            ></textarea>
+        </div>
+
+        <div class="freeform-section">
+            <button class="freeform-toggle" onclick="toggleFreeform()">
+                💭 Add freeform thoughts (optional)
+            </button>
+            <div class="freeform-content" id="freeformContent">
+                <textarea 
+                    class="freeform-textarea" 
+                    id="freeformText" 
+                    placeholder="Any other thoughts for today..."
+                    oninput="saveFreeform()"
+                ></textarea>
+            </div>
+        </div>
+
+        <div class="journal-footer">
+            <div class="word-count" id="wordCount">0 / 149 words</div>
+            <div class="auto-saved" id="autoSaved"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Insights Modal -->
+<div class="modal-overlay" id="insightsModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">AI Analysis</h2>
+            <button class="modal-close" onclick="closeInsightsModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="insights-grid" id="insightsGrid"></div>
+            <button class="delete-insight-btn" onclick="deleteCurrentInsight()">Delete This Analysis</button>
+        </div>
+    </div>
+</div>
+
+<!-- Selection Modal -->
+<div class="modal-overlay" id="selectionModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Select 7 Entries to Analyze</h2>
+            <button class="modal-close" onclick="closeSelectionModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="selection-grid" id="selectionGrid"></div>
+            <div class="selection-footer">
+                <div class="selection-count" id="selectionCount">0 / 7 selected</div>
+                <button class="confirm-selection-btn" onclick="confirmSelection()" id="confirmSelectionBtn" disabled>
+                    Analyze Selected Entries
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Onboarding Modal -->
+<div class="modal-overlay" id="onboardingModal">
+    <div class="modal-content onboarding-content">
+        <button class="modal-close" onclick="closeOnboarding()" style="position:absolute;top:16px;right:16px;">×</button>
+        <div class="onboarding-slide" id="onboardingSlide">
+            <div class="onboarding-icon">📔</div>
+            <h2 class="onboarding-title">Welcome to Your Calendar Journal</h2>
+            <p class="onboarding-text">
+                This app helps you understand yourself better through daily reflection. 
+                Each day, you'll answer one of 60 rotating questions about your <strong>Past</strong>, 
+                <strong>Present</strong>, and <strong>Future</strong>.
+            </p>
+            <div class="onboarding-steps">
+                <div class="onboarding-step">
+                    <span class="step-number">1</span>
+                    <span class="step-text">Write at least 149 words per entry</span>
+                </div>
+                <div class="onboarding-step">
+                    <span class="step-number">2</span>
+                    <span class="step-text">Complete 7 entries to unlock AI insights</span>
+                </div>
+                <div class="onboarding-step">
+                    <span class="step-number">3</span>
+                    <span class="step-text">Get 4 different perspectives on your patterns</span>
+                </div>
+            </div>
+            <button class="onboarding-btn" onclick="closeOnboarding()">Get Started</button>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript Files (order matters!) -->
+<script src="questions.js"></script>
+<script src="validation.js"></script>
+<script src="supabase.js"></script>
+<script src="calendar.js"></script>
+<script src="journal.js"></script>
+<script src="insights.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
