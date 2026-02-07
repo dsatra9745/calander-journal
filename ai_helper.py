@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import requests
+import os
 from io import BytesIO
 from reportlab.pdfgen import canvas as pdf_canvas
 from reportlab.lib.pagesizes import letter
@@ -9,8 +10,8 @@ from reportlab.lib import colors
 app = Flask(__name__)
 CORS(app)
 
-# API KEY
-ANTHROPIC_API_KEY = "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"
+# API KEY - reads from Render environment variable
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
 @app.route("/ask-ai", methods=["POST"])
 def ask_ai():
