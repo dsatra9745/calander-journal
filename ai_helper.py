@@ -10,8 +10,7 @@ app = Flask(__name__)
 CORS(app)
 
 # API KEY
-import os
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+ANTHROPIC_API_KEY = "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"
 
 @app.route("/ask-ai", methods=["POST"])
 def ask_ai():
@@ -36,7 +35,7 @@ def ask_ai():
                 "content-type": "application/json",
             },
             json={
-                "model": "claude-3-haiku-20240307",
+                "model": "claude-sonnet-4-20250514",
                 "max_tokens": 1000,
                 "messages": [{"role": "user", "content": prompt}],
             },
@@ -295,4 +294,4 @@ JOURNAL ENTRIES:
 if __name__ == "__main__":
     print("Starting Flask server...")
     print(f"API key configured: {bool(ANTHROPIC_API_KEY and ANTHROPIC_API_KEY != 'sk-ant-your-key-here')}")
-    app.run(host='0.0.0.0', port=10000, debug=False)
+    app.run(port=3000, debug=True)
