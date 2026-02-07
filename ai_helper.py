@@ -294,4 +294,4 @@ JOURNAL ENTRIES:
 if __name__ == "__main__":
     print("Starting Flask server...")
     print(f"API key configured: {bool(ANTHROPIC_API_KEY and ANTHROPIC_API_KEY != 'sk-ant-your-key-here')}")
-    app.run(port=3000, debug=True)
+    app.run(host='0.0.0.0', port=10000)
