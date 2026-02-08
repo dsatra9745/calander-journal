@@ -187,6 +187,8 @@ async function saveEntry(date, entryData) {
                 answer: entryData.answer,
                 freeform: entryData.freeform || '',
                 image_url: entryData.imageUrl || null
+            }, {
+                onConflict: 'user_id,date'
             });
         
         if (error) throw error;
