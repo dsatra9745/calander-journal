@@ -1,7 +1,7 @@
 // ============================================
 // SUPABASE INITIALIZATION
 // ============================================
-console.log('VERSION: SPLIT-FILES-2026-02-07');
+console.log('VERSION: SPLIT-FILES-2026-02-08');
 
 const SUPABASE_URL = 'https://umegwazczyzgpqptestt.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_zZXXP8ASqOZMXNWXAswPWw_onXwMUqz';
@@ -13,6 +13,16 @@ let currentUser = null;
 // AUTH FUNCTIONS
 // ============================================
 async function initAuth() {
+    // Check if this is a password reset callback
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const type = hashParams.get('type');
+    
+    if (type === 'recovery') {
+        // Show password reset form
+        showPasswordReset();
+        return;
+    }
+    
     const { data: { session } } = await supabaseClient.auth.getSession();
     
     if (session) {
@@ -27,13 +37,66 @@ async function initAuth() {
 function showAuth() {
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('app-screen').style.display = 'none';
+    document.getElementById('password-reset-screen').style.display = 'none';
 }
 
 function showApp() {
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app-screen').style.display = 'block';
+    document.getElementById('password-reset-screen').style.display = 'none';
     render();
     checkOnboarding();
+}
+
+function showPasswordReset() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'none';
+    document.getElementById('password-reset-screen').style.display = 'flex';
+}
+
+async function submitNewPassword() {
+    const newPassword = document.getElementById('new-password').value;
+    const confirmPassword = document.getElementById('confirm-password').value;
+    const messageEl = document.getElementById('reset-message');
+    
+    if (!newPassword || !confirmPassword) {
+        messageEl.textContent = 'Please fill in both fields.';
+        messageEl.className = 'auth-message error';
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        messageEl.textContent = 'Passwords do not match.';
+        messageEl.className = 'auth-message error';
+        return;
+    }
+    
+    if (newPassword.length < 6) {
+        messageEl.textContent = 'Password must be at least 6 characters.';
+        messageEl.className = 'auth-message error';
+        return;
+    }
+    
+    try {
+        const { error } = await supabaseClient.auth.updateUser({
+            password: newPassword
+        });
+        
+        if (error) throw error;
+        
+        messageEl.textContent = 'Password updated! Redirecting...';
+        messageEl.className = 'auth-message success';
+        
+        // Clear the hash and redirect to app
+        setTimeout(() => {
+            window.location.hash = '';
+            window.location.reload();
+        }, 1500);
+        
+    } catch (error) {
+        messageEl.textContent = error.message;
+        messageEl.className = 'auth-message error';
+    }
 }
 
 function setupAuthListeners() {
@@ -206,7 +269,6 @@ async function saveInsight(insight) {
             .from('insights')
             .insert({
                 user_id: currentUser.id,
-                timestamp: insight.timestamp,
                 entries: insight.entries,
                 analyses: insight.analyses
             });
