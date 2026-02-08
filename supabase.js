@@ -289,13 +289,13 @@ async function loadInsights() {
             .from('insights')
             .select('*')
             .eq('user_id', currentUser.id)
-            .order('timestamp', { ascending: false });
+            .order('created_at', { ascending: false });
         
         if (error) throw error;
         
         state.insightsHistory = data.map(row => ({
             id: row.id,
-            timestamp: row.timestamp,
+            timestamp: row.created_at,
             entries: row.entries,
             analyses: row.analyses
         }));
