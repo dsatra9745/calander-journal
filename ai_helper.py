@@ -207,6 +207,73 @@ def export_prompt():
         download_name='journal-analysis.pdf'
     )
 
+@app.route("/ocr", methods=["POST"])
+def ocr():
+    print("\n=== OCR REQUEST ===")
+    
+    if not ANTHROPIC_API_KEY or ANTHROPIC_API_KEY == "sk-ant-your-key-here":
+        print("ERROR: API key not set!")
+        return jsonify({"error": "API key not configured"}), 500
+    
+    data = request.json
+    image_base64 = data.get("image", "")
+    
+    if not image_base64:
+        return jsonify({"error": "No image provided"}), 400
+    
+    print(f"Image base64 length: {len(image_base64)}")
+    
+    try:
+        response = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": ANTHROPIC_API_KEY,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": "claude-sonnet-4-20250514",
+                "max_tokens": 2000,
+                "messages": [{
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": "image/jpeg",
+                                "data": image_base64
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": "Please transcribe all the handwritten text in this image. Output only the transcribed text, nothing else. Preserve paragraph breaks where they appear."
+                        }
+                    ]
+                }],
+            },
+            timeout=60
+        )
+        
+        print(f"OCR Status code: {response.status_code}")
+        
+        if response.status_code != 200:
+            return jsonify({"error": f"API error: {response.text}"}), response.status_code
+        
+        result = response.json()
+        text = ""
+        if "content" in result and len(result["content"]) > 0:
+            text = result["content"][0].get("text", "")
+            print(f"Transcribed text length: {len(text)}")
+        else:
+            return jsonify({"error": "No content in API response"}), 500
+        
+        return jsonify({"text": text})
+        
+    except Exception as e:
+        print(f"OCR ERROR: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     print("Starting Flask server...")
     print(f"API key configured: {bool(ANTHROPIC_API_KEY and ANTHROPIC_API_KEY != 'sk-ant-your-key-here')}")
