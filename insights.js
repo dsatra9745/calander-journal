@@ -127,7 +127,7 @@ async function runInsightsGeneration(entries) {
         
         const insights = {
             id: Date.now(),
-            timestamp: new Date().toISOString(),
+            timestamp: new Date().toISOString().split('.')[0] + 'Z',
             entries: entries.map(e => e.date),
             analyses: prompts.map((p, i) => ({
                 title: p.title,
