@@ -67,229 +67,178 @@ def export_prompt():
     print("\n=== EXPORT PROMPT REQUEST ===")
     
     data = request.json
-    entries = data.get("entries", "")
-    date_range = data.get("dateRange", "")
+    entries = data.get("entries", [])
     
-    print(f"Generating 4-prompt PDF for: {date_range}")
+    # Calculate date range
+    if entries:
+        dates = sorted([e.get('date', '') for e in entries])
+        date_range = f"{dates[0]} to {dates[-1]}"
+    else:
+        date_range = "Unknown dates"
     
-    # Create PDF with canvas
+    print(f"Generating clean PDF for: {date_range}")
+    
+    # Create PDF
     buffer = BytesIO()
     c = pdf_canvas.Canvas(buffer, pagesize=letter)
     width, height = letter
     
-    # Title page
-    c.setFont("Helvetica-Bold", 22)
-    c.drawCentredString(width/2, height - 60, "🧠 Your Journal Analysis Prompts")
+    # ===== PAGE 1: COVER =====
+    # Title
+    c.setFont("Helvetica-Bold", 28)
+    c.drawCentredString(width/2, height - 100, "Your Journal Analysis")
+    
+    # Date info
+    c.setFont("Helvetica", 12)
+    c.setFillColor(colors.Color(0.4, 0.4, 0.4))
+    c.drawCentredString(width/2, height - 130, f"{date_range}  •  {len(entries)} entries")
+    
+    # How to use box
+    box_top = height - 180
+    box_height = 140
+    c.setFillColor(colors.Color(0.94, 0.97, 1.0))  # Light blue
+    c.roundRect(60, box_top - box_height, width - 120, box_height, 10, fill=1, stroke=0)
+    
+    # Blue left border
+    c.setFillColor(colors.Color(0.23, 0.51, 0.97))
+    c.rect(60, box_top - box_height, 4, box_height, fill=1, stroke=0)
+    
+    c.setFillColor(colors.Color(0.12, 0.25, 0.55))
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(80, box_top - 25, "How to use:")
     
     c.setFont("Helvetica", 12)
-    c.setFillColor(colors.grey)
-    c.drawCentredString(width/2, height - 85, f"Entries: {date_range}")
-    
-    # Instructions
     c.setFillColor(colors.black)
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(50, height - 120, "HOW TO USE:")
     
-    c.setFont("Helvetica", 10)
-    instructions = [
-        "1. Go to claude.ai (create free account if needed)",
-        "2. Start FOUR separate conversations",
-        "3. Copy each prompt below into a different conversation",
-        "4. Compare the 4 different perspectives you get"
+    steps = [
+        ("1", "Upload this PDF to ChatGPT, Claude, or any AI"),
+        ("2", 'Type: "Do as the PDF tells you to do, please"'),
+        ("3", "Get your analysis")
     ]
     
-    y = height - 145
-    for inst in instructions:
-        c.drawString(60, y, inst)
-        y -= 18
-    
-    y -= 10
-    c.setFont("Helvetica-Bold", 11)
-    c.drawString(50, y, "Why 4 prompts? Each reveals different patterns:")
-    
-    c.setFont("Helvetica", 9)
-    c.setFillColor(colors.Color(0.2, 0.4, 0.7))
-    c.drawString(60, y - 18, "• Evidence-Based: Neutral observations")
-    c.setFillColor(colors.Color(0.8, 0.2, 0.2))
-    c.drawString(60, y - 33, "• Blind Spot Hunter: Contradictions you miss")
-    c.setFillColor(colors.Color(0.2, 0.6, 0.3))
-    c.drawString(60, y - 48, "• Growth Mirror: What you can control")
-    c.setFillColor(colors.Color(0.9, 0.5, 0))
-    c.drawString(60, y - 63, "• Thematic: The connecting thread")
+    y = box_top - 55
+    for num, text in steps:
+        # Number circle
+        c.setFillColor(colors.Color(0.23, 0.51, 0.97))
+        c.circle(90, y + 4, 10, fill=1, stroke=0)
+        c.setFillColor(colors.white)
+        c.setFont("Helvetica-Bold", 10)
+        c.drawCentredString(90, y, num)
+        
+        # Text
+        c.setFillColor(colors.black)
+        c.setFont("Helvetica", 11)
+        c.drawString(110, y, text)
+        y -= 32
     
     c.setFillColor(colors.black)
     
-    # The 4 prompts
-    prompts = {
-        "Evidence-Based Pattern Detector": {
-            "color": colors.Color(0.2, 0.4, 0.7),
-            "text": f"""Analyze the following 7 days of journal entries. Your role is to identify patterns that appear multiple times (3+ instances) in the user's own words. Be specific and cite examples when relevant. Focus only on what's clearly present in the text - do not infer or assume beyond the evidence.
-
-Structure your response in two sections:
-1) RECURRING PATTERNS: List patterns you observe with evidence
-2) UNCLEAR/NEEDS MORE DATA: What's ambiguous or would benefit from more information
-
-Keep response under 200 words, neutral and professional tone. Do not use any names of people mentioned in the entries - refer to them as "a friend," "a relationship," etc.
-
-JOURNAL ENTRIES:
-
-{entries}"""
-        },
-        "Blind Spot Hunter": {
-            "color": colors.Color(0.8, 0.2, 0.2),
-            "text": f"""Read these journal entries looking for blind spots:
-1) Contradictions between stated values and described behaviors
-2) Topics mentioned once then avoided
-3) Patterns of attributing outcomes to external factors vs internal choices
-4) Gaps between what they say they want and what they're actually doing
-
-Be direct but not harsh. Point out only what you have clear evidence for from their own words. Focus on patterns that appear across multiple entries or life areas.
-
-Keep response under 200 words. Do not use any names of people mentioned in the entries - refer to them as "a friend," "someone you mentioned," etc.
-
-JOURNAL ENTRIES:
-
-{entries}"""
-        },
-        "Growth-Oriented Mirror": {
-            "color": colors.Color(0.2, 0.6, 0.3),
-            "text": f"""Analyze these entries as if you're a supportive but honest friend. Identify:
-1) Where they're underestimating their own agency
-2) Obstacles they might be able to shift with different perspective
-3) One pattern that, if changed, might unlock progress in multiple areas
-
-Focus on what they can control. Be encouraging but don't sugarcoat. Point out strengths they've demonstrated in the entries themselves - only claim abilities you have evidence for.
-
-Keep response under 200 words. Do not use any names of people mentioned in the entries.
-
-JOURNAL ENTRIES:
-
-{entries}"""
-        },
-        "Thematic Synthesizer": {
-            "color": colors.Color(0.9, 0.5, 0),
-            "text": f"""Look across all entries for the connecting thread - what's the core tension or theme running through multiple areas of their life? Identify the deeper story beneath the surface complaints or observations.
-
-What's the one insight that ties together different domains (career, relationships, creative work, etc.)? What pattern are they running that shows up everywhere?
-
-Be concise and insightful. Keep response under 150 words. Do not use any names of people mentioned in the entries.
-
-JOURNAL ENTRIES:
-
-{entries}"""
-        }
-    }
+    # ===== PAGE 2: THE PROMPT =====
+    c.showPage()
     
-    # New page for each prompt
-    prompt_num = 1
-    for title, data in prompts.items():
-        c.showPage()
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(50, height - 50, "ANALYSIS PROMPT")
+    
+    c.setFont("Helvetica", 10)
+    c.setFillColor(colors.Color(0.4, 0.4, 0.4))
+    c.drawString(50, height - 70, "The AI will follow these instructions when analyzing your entries.")
+    
+    # Prompt box
+    c.setFillColor(colors.Color(0.96, 0.96, 0.96))
+    prompt_box_top = height - 95
+    prompt_box_height = 320
+    c.roundRect(40, prompt_box_top - prompt_box_height, width - 80, prompt_box_height, 8, fill=1, stroke=0)
+    
+    prompt_text = """Analyze these journal entries from 4 perspectives:
+
+1. EVIDENCE-BASED PATTERNS
+What patterns appear consistently (3+ times)? Cite specific quotes or examples from the entries.
+
+2. BLIND SPOTS
+What contradictions exist between what they say they value and what they actually do? What topics are mentioned once then avoided? What might they not be seeing?
+
+3. GROWTH & STRENGTHS
+What capabilities or resilience do they demonstrate (with evidence)? What's one specific, actionable next step?
+
+4. DEEPER THEMES
+What's the core tension running through all entries? What question do they keep circling back to?
+
+GUIDELINES:
+- Be specific, cite evidence from the entries
+- Keep each section under 150 words
+- Be honest but constructive
+- Don't use names of people mentioned"""
+
+    c.setFillColor(colors.black)
+    c.setFont("Courier", 9)
+    
+    y = prompt_box_top - 20
+    for line in prompt_text.split('\n'):
+        c.drawString(55, y, line)
+        y -= 14
+    
+    # ===== PAGE 3+: ENTRIES =====
+    c.showPage()
+    
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(50, height - 50, "JOURNAL ENTRIES")
+    
+    y = height - 90
+    
+    for i, entry in enumerate(entries):
+        date = entry.get('date', 'Unknown')
+        answer = entry.get('answer', '')
+        question_idx = entry.get('questionIndex', 0)
         
-        # Header with colored bar
-        c.setFillColor(data["color"])
-        c.rect(0, height - 40, width, 40, fill=1, stroke=0)
+        # Determine category
+        cat_idx = question_idx % 3
+        category = ['PAST', 'PRESENT', 'FUTURE'][cat_idx]
         
-        c.setFillColor(colors.white)
-        c.setFont("Helvetica-Bold", 16)
-        c.drawString(50, height - 27, f"PROMPT {prompt_num}: {title}")
-        
-        c.setFillColor(colors.black)
-        c.setFont("Helvetica-Bold", 11)
-        y = height - 70
-        c.drawString(50, y, f"▼ COPY THIS ENTIRE TEXT INTO CLAUDE.AI ▼")
-        
-        # Gray box for prompt
-        y -= 20
-        box_top = y
-        box_left = 40
-        box_right = width - 40
-        
-        c.setFillColor(colors.Color(0.95, 0.95, 0.95))
-        c.rect(box_left, 50, box_right - box_left, box_top - 50, fill=1, stroke=0)
-        
-        # Add prompt text
-        c.setFillColor(colors.black)
-        c.setFont("Courier", 7)
-        
-        y = box_top - 15
-        for line in data["text"].split('\n'):
-            if y < 70:  # New page if needed
-                c.showPage()
-                y = height - 50
-                # Continue gray background
-                c.setFillColor(colors.Color(0.95, 0.95, 0.95))
-                c.rect(box_left, 50, box_right - box_left, height - 100, fill=1, stroke=0)
-                c.setFillColor(colors.black)
-                c.setFont("Courier", 7)
-            
-            # Wrap long lines
-            if len(line) > 100:
-                words = line.split(' ')
-                current_line = ""
-                for word in words:
-                    if len(current_line + word) < 100:
-                        current_line += word + " "
-                    else:
-                        c.drawString(box_left + 10, y, current_line.strip())
-                        y -= 10
-                        current_line = word + " "
-                        if y < 70:
-                            c.showPage()
-                            y = height - 50
-                            c.setFillColor(colors.Color(0.95, 0.95, 0.95))
-                            c.rect(box_left, 50, box_right - box_left, height - 100, fill=1, stroke=0)
-                            c.setFillColor(colors.black)
-                            c.setFont("Courier", 7)
-                if current_line.strip():
-                    c.drawString(box_left + 10, y, current_line.strip())
-                    y -= 10
-            else:
-                c.drawString(box_left + 10, y, line)
-                y -= 10
-        
-        # End marker
-        y -= 5
-        if y < 70:
+        # Check if we need a new page
+        if y < 150:
             c.showPage()
             y = height - 50
         
+        # Entry header
         c.setFont("Helvetica-Bold", 11)
-        c.drawString(50, 60, "▲ COPY UNTIL HERE ▲")
+        c.setFillColor(colors.Color(0.4, 0.4, 0.4))
+        c.drawString(50, y, f"Entry {i+1}  —  {date}  —  {category}")
+        y -= 20
         
-        prompt_num += 1
-    
-    # Final page with summary
-    c.showPage()
-    c.setFont("Helvetica-Bold", 16)
-    c.drawCentredString(width/2, height - 100, "Next Steps")
-    
-    c.setFont("Helvetica", 11)
-    y = height - 140
-    tips = [
-        "1. Paste each prompt into a separate Claude.ai conversation",
-        "2. Read all 4 analyses - they each reveal different things",
-        "3. The most valuable insights often come from Blind Spot Hunter",
-        "4. Use Growth Mirror for actionable next steps",
-        "5. Save these analyses and revisit them in a month"
-    ]
-    
-    for tip in tips:
-        c.drawString(60, y, tip)
-        y -= 25
-    
-    c.setFont("Helvetica-Oblique", 10)
-    c.setFillColor(colors.grey)
-    c.drawCentredString(width/2, 60, "📌 Four perspectives give you a fuller picture than any single analysis could")
+        # Entry text
+        c.setFont("Helvetica", 10)
+        c.setFillColor(colors.black)
+        
+        # Word wrap the answer
+        words = answer.split()
+        line = ""
+        for word in words:
+            test_line = line + word + " "
+            if len(test_line) > 85:
+                c.drawString(50, y, line.strip())
+                y -= 14
+                line = word + " "
+                if y < 60:
+                    c.showPage()
+                    y = height - 50
+            else:
+                line = test_line
+        if line.strip():
+            c.drawString(50, y, line.strip())
+            y -= 14
+        
+        y -= 20  # Space between entries
     
     c.save()
     buffer.seek(0)
     
-    print("4-prompt PDF generated successfully")
+    print("Clean PDF generated successfully")
     
     return send_file(
-        buffer, mimetype='application/pdf',
+        buffer, 
+        mimetype='application/pdf',
         as_attachment=True,
-        download_name=f'journal-4-prompts-{date_range}.pdf'
+        download_name=f'journal-analysis.pdf'
     )
 
 if __name__ == "__main__":
