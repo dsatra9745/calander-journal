@@ -41,6 +41,22 @@
     </div>
 </div>
 
+<!-- PASSWORD RESET SCREEN -->
+<div id="password-reset-screen" style="display: none;">
+    <div class="auth-container">
+        <h1 class="auth-title">Set New Password</h1>
+        <p class="auth-subtitle">Enter your new password below</p>
+        
+        <div id="reset-message" class="auth-message"></div>
+        
+        <div class="auth-form">
+            <input type="password" id="new-password" class="auth-input" placeholder="New password" required minlength="6">
+            <input type="password" id="confirm-password" class="auth-input" placeholder="Confirm password" required minlength="6">
+            <button type="button" class="auth-button" onclick="submitNewPassword()">Update Password</button>
+        </div>
+    </div>
+</div>
+
 <!-- APP SCREEN -->
 <div id="app-screen">
     <div class="app-header">
@@ -54,11 +70,22 @@
             <div class="calendar-header">
                 <h1 class="month-title" id="monthTitle"></h1>
                 <div class="nav-buttons">
-                    <button class="nav-btn" onclick="changeMonth(-1)">←</button>
-                    <button class="nav-btn" onclick="changeMonth(0)">Today</button>
-                    <button class="nav-btn" onclick="changeMonth(1)">→</button>
-                    <button class="btn-primary" onclick="generateInsights()" id="generateBtn" style="margin-left: 16px;">
-                        🧠 AI Insights
+                    <div class="nav-group">
+                        <button class="nav-btn" onclick="changeMonth(-1)">←</button>
+                        <button class="nav-btn" onclick="changeMonth(0)">Today</button>
+                        <button class="nav-btn" onclick="changeMonth(1)">→</button>
+                    </div>
+                    <button class="generate-btn state-0" onclick="generateInsights()" id="generateBtn">
+                        <span>AI Insights</span>
+                        <div class="insights-dots">
+                            <span class="insight-dot"></span>
+                            <span class="insight-dot"></span>
+                            <span class="insight-dot"></span>
+                            <span class="insight-dot"></span>
+                            <span class="insight-dot"></span>
+                            <span class="insight-dot"></span>
+                            <span class="insight-dot"></span>
+                        </div>
                     </button>
                 </div>
             </div>
@@ -68,7 +95,7 @@
 
     <div class="insights-sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h2 class="sidebar-title">🧠 Insights History</h2>
+            <h2 class="sidebar-title">Insights History</h2>
         </div>
         <button class="export-pdf-btn" onclick="exportToPDF()">
             Export Prompts (PDF)
@@ -142,15 +169,15 @@
 <div class="modal-overlay" id="selectionModal">
     <div class="modal-content">
         <div class="modal-header">
-            <h2 class="modal-title">Select 7 Entries to Analyze</h2>
+            <h2 class="modal-title">Entries to Analyze</h2>
             <button class="modal-close" onclick="closeSelectionModal()">×</button>
         </div>
         <div class="modal-body">
+            <p style="color: #6b6b6b; font-size: 13px; margin-bottom: 16px;">Your oldest 7 entries are selected (highlighted). These will be analyzed first.</p>
             <div class="selection-grid" id="selectionGrid"></div>
             <div class="selection-footer">
-                <div class="selection-count" id="selectionCount">0 / 7 selected</div>
-                <button class="confirm-selection-btn" onclick="confirmSelection()" id="confirmSelectionBtn" disabled>
-                    Analyze Selected Entries
+                <button class="confirm-selection-btn" onclick="confirmSelection()" id="confirmSelectionBtn">
+                    Analyze These Entries
                 </button>
             </div>
         </div>
@@ -184,6 +211,25 @@
                 </div>
             </div>
             <button class="onboarding-btn" onclick="closeOnboarding()">Get Started</button>
+        </div>
+    </div>
+</div>
+
+<!-- Export PDF Popup -->
+<div class="modal-overlay" id="exportPopup">
+    <div class="modal-content export-popup-content">
+        <button class="modal-close" onclick="closeExportPopup()">×</button>
+        <div class="export-popup-inner">
+            <h3>Your PDF is ready!</h3>
+            <p>After uploading the PDF to any AI, type this prompt:</p>
+            <div class="prompt-copy-box">
+                <span class="prompt-text">Do as the PDF tells you to do, please</span>
+                <button class="copy-btn" id="copyPromptBtn" onclick="copyPromptText()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    Copy
+                </button>
+            </div>
+            <button class="download-pdf-btn" id="downloadPdfBtn">Generating PDF...</button>
         </div>
     </div>
 </div>
