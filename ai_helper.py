@@ -3,9 +3,7 @@ from flask_cors import CORS
 import requests
 import os
 from io import BytesIO
-from reportlab.pdfgen import canvas as pdf_canvas
-from reportlab.lib.pagesizes import letter
-from reportlab.lib import colors
+from weasyprint import HTML
 
 app = Flask(__name__)
 CORS(app)
@@ -72,84 +70,207 @@ def export_prompt():
     # Calculate date range
     if entries:
         dates = sorted([e.get('date', '') for e in entries])
-        date_range = f"{dates[0]} to {dates[-1]}"
+        date_range = f"{dates[0]} – {dates[-1]}"
+        first_date = dates[-1]  # Most recent date for display
     else:
         date_range = "Unknown dates"
+        first_date = "Unknown"
     
-    print(f"Generating clean PDF for: {date_range}")
+    print(f"Generating PDF for: {date_range}")
     
-    # Create PDF
-    buffer = BytesIO()
-    c = pdf_canvas.Canvas(buffer, pagesize=letter)
-    width, height = letter
-    
-    # ===== PAGE 1: COVER =====
-    # Title
-    c.setFont("Helvetica-Bold", 28)
-    c.drawCentredString(width/2, height - 100, "Your Journal Analysis")
-    
-    # Date info
-    c.setFont("Helvetica", 12)
-    c.setFillColor(colors.Color(0.4, 0.4, 0.4))
-    c.drawCentredString(width/2, height - 130, f"{date_range}  •  {len(entries)} entries")
-    
-    # How to use box
-    box_top = height - 180
-    box_height = 140
-    c.setFillColor(colors.Color(0.94, 0.97, 1.0))  # Light blue
-    c.roundRect(60, box_top - box_height, width - 120, box_height, 10, fill=1, stroke=0)
-    
-    # Blue left border
-    c.setFillColor(colors.Color(0.23, 0.51, 0.97))
-    c.rect(60, box_top - box_height, 4, box_height, fill=1, stroke=0)
-    
-    c.setFillColor(colors.Color(0.12, 0.25, 0.55))
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(80, box_top - 25, "How to use:")
-    
-    c.setFont("Helvetica", 12)
-    c.setFillColor(colors.black)
-    
-    steps = [
-        ("1", "Upload this PDF to ChatGPT, Claude, or any AI"),
-        ("2", 'Type: "Do as the PDF tells you to do, please"'),
-        ("3", "Get your analysis")
-    ]
-    
-    y = box_top - 55
-    for num, text in steps:
-        # Number circle
-        c.setFillColor(colors.Color(0.23, 0.51, 0.97))
-        c.circle(90, y + 4, 10, fill=1, stroke=0)
-        c.setFillColor(colors.white)
-        c.setFont("Helvetica-Bold", 10)
-        c.drawCentredString(90, y, num)
+    # Build entries HTML
+    entries_html = ""
+    for i, entry in enumerate(entries):
+        date = entry.get('date', 'Unknown')
+        answer = entry.get('answer', '').replace('\n', '<br>')
+        question_idx = entry.get('questionIndex', 0)
         
-        # Text
-        c.setFillColor(colors.black)
-        c.setFont("Helvetica", 11)
-        c.drawString(110, y, text)
-        y -= 32
+        # Determine category
+        cat_idx = question_idx % 3
+        category = ['PAST', 'PRESENT', 'FUTURE'][cat_idx]
+        
+        entries_html += f'''
+        <div class="entry">
+            <div class="entry-date">{date} — {category}</div>
+            <div class="entry-answer">{answer}</div>
+        </div>
+        '''
     
-    c.setFillColor(colors.black)
+    # Full HTML template matching the mock
+    html_content = f'''<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap');
+        
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        
+        @page {{
+            size: letter;
+            margin: 0.5in;
+        }}
+        
+        body {{ 
+            font-family: 'DM Sans', -apple-system, sans-serif; 
+            line-height: 1.7;
+            color: #2d2d2d;
+            font-size: 11pt;
+        }}
+        
+        .cover {{
+            text-align: center;
+            padding: 40px 20px 30px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }}
+        
+        .cover h1 {{
+            font-family: 'DM Serif Display', Georgia, serif;
+            font-size: 28pt;
+            margin-bottom: 10px;
+            font-weight: normal;
+        }}
+        
+        .cover .dates {{
+            color: #666;
+            margin-bottom: 24px;
+            font-size: 11pt;
+        }}
+        
+        .how-to-use {{
+            background: #f0f7ff;
+            border: 2px solid #3b82f6;
+            border-radius: 12px;
+            padding: 20px 28px;
+            text-align: left;
+            max-width: 380px;
+            margin: 0 auto;
+        }}
+        
+        .how-to-use h3 {{
+            font-size: 13pt;
+            margin-bottom: 14px;
+            color: #1e40af;
+        }}
+        
+        .step {{
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+            font-size: 10.5pt;
+        }}
+        
+        .step:last-child {{
+            margin-bottom: 0;
+        }}
+        
+        .step-num {{
+            background: #3b82f6;
+            color: white;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10pt;
+            font-weight: bold;
+            flex-shrink: 0;
+        }}
+        
+        .step strong {{
+            background: #e0edff;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 9.5pt;
+        }}
+        
+        .prompt-section {{
+            background: #fafafa;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border: 1px solid #e8e8e8;
+            page-break-inside: avoid;
+        }}
+        
+        .prompt-section h2 {{
+            font-size: 14pt;
+            margin-bottom: 16px;
+            color: #444;
+        }}
+        
+        .prompt-box {{
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 9pt;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            border: 1px solid #ddd;
+        }}
+        
+        .entries-section h2 {{
+            font-size: 16pt;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }}
+        
+        .entry {{
+            margin-bottom: 24px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #eee;
+            page-break-inside: avoid;
+        }}
+        
+        .entry:last-child {{
+            border-bottom: none;
+        }}
+        
+        .entry-date {{
+            font-weight: 600;
+            color: #666;
+            font-size: 10pt;
+            margin-bottom: 8px;
+        }}
+        
+        .entry-answer {{
+            font-size: 10.5pt;
+            line-height: 1.7;
+        }}
+    </style>
+</head>
+<body>
+
+<div class="cover">
+    <h1>📔 Your Journal Analysis</h1>
+    <div class="dates">{date_range} • {len(entries)} entries</div>
     
-    # ===== PAGE 2: THE PROMPT =====
-    c.showPage()
-    
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(50, height - 50, "ANALYSIS PROMPT")
-    
-    c.setFont("Helvetica", 10)
-    c.setFillColor(colors.Color(0.4, 0.4, 0.4))
-    c.drawString(50, height - 70, "The AI will follow these instructions when analyzing your entries.")
-    
-    # Prompt box
-    c.setFillColor(colors.Color(0.96, 0.96, 0.96))
-    prompt_box_top = height - 95
-    prompt_box_height = 320
-    c.roundRect(40, prompt_box_top - prompt_box_height, width - 80, prompt_box_height, 8, fill=1, stroke=0)
-    
-    prompt_text = """Analyze these journal entries from 4 perspectives:
+    <div class="how-to-use">
+        <h3>How to use:</h3>
+        <div class="step">
+            <span class="step-num">1</span>
+            <span>Upload this PDF to ChatGPT, Claude, or any AI</span>
+        </div>
+        <div class="step">
+            <span class="step-num">2</span>
+            <span>Type: <strong>"Do as the PDF tells you to do, please"</strong></span>
+        </div>
+        <div class="step">
+            <span class="step-num">3</span>
+            <span>Get your analysis</span>
+        </div>
+    </div>
+</div>
+
+<div class="prompt-section">
+    <h2>ANALYSIS PROMPT</h2>
+    <div class="prompt-box">Analyze these journal entries from 4 perspectives:
 
 1. EVIDENCE-BASED PATTERNS
 What patterns appear consistently (3+ times)? Cite specific quotes or examples from the entries.
@@ -167,78 +288,29 @@ GUIDELINES:
 - Be specific, cite evidence from the entries
 - Keep each section under 150 words
 - Be honest but constructive
-- Don't use names of people mentioned"""
+- Don't use names of people mentioned</div>
+</div>
 
-    c.setFillColor(colors.black)
-    c.setFont("Courier", 9)
+<div class="entries-section">
+    <h2>JOURNAL ENTRIES</h2>
+    {entries_html}
+</div>
+
+</body>
+</html>'''
     
-    y = prompt_box_top - 20
-    for line in prompt_text.split('\n'):
-        c.drawString(55, y, line)
-        y -= 14
+    # Convert HTML to PDF
+    pdf_buffer = BytesIO()
+    HTML(string=html_content).write_pdf(pdf_buffer)
+    pdf_buffer.seek(0)
     
-    # ===== PAGE 3+: ENTRIES =====
-    c.showPage()
-    
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(50, height - 50, "JOURNAL ENTRIES")
-    
-    y = height - 90
-    
-    for i, entry in enumerate(entries):
-        date = entry.get('date', 'Unknown')
-        answer = entry.get('answer', '')
-        question_idx = entry.get('questionIndex', 0)
-        
-        # Determine category
-        cat_idx = question_idx % 3
-        category = ['PAST', 'PRESENT', 'FUTURE'][cat_idx]
-        
-        # Check if we need a new page
-        if y < 150:
-            c.showPage()
-            y = height - 50
-        
-        # Entry header
-        c.setFont("Helvetica-Bold", 11)
-        c.setFillColor(colors.Color(0.4, 0.4, 0.4))
-        c.drawString(50, y, f"Entry {i+1}  —  {date}  —  {category}")
-        y -= 20
-        
-        # Entry text
-        c.setFont("Helvetica", 10)
-        c.setFillColor(colors.black)
-        
-        # Word wrap the answer
-        words = answer.split()
-        line = ""
-        for word in words:
-            test_line = line + word + " "
-            if len(test_line) > 85:
-                c.drawString(50, y, line.strip())
-                y -= 14
-                line = word + " "
-                if y < 60:
-                    c.showPage()
-                    y = height - 50
-            else:
-                line = test_line
-        if line.strip():
-            c.drawString(50, y, line.strip())
-            y -= 14
-        
-        y -= 20  # Space between entries
-    
-    c.save()
-    buffer.seek(0)
-    
-    print("Clean PDF generated successfully")
+    print("PDF generated successfully")
     
     return send_file(
-        buffer, 
+        pdf_buffer, 
         mimetype='application/pdf',
         as_attachment=True,
-        download_name=f'journal-analysis.pdf'
+        download_name='journal-analysis.pdf'
     )
 
 if __name__ == "__main__":
